@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DvVNL Electricity Tracker — Sai Computers</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{
+  --dk:#1F4E79;--md:#2E75B6;--lt:#BDD7EE;--ac:#F0A500;
+  --ok:#1D7A45;--er:#C0392B;--bg:#F0F4F8;--cd:#FFFFFF;
+  --tx:#1A2B3C;--mu:#6B7F96;--bo:#D0DCE8;
+  --adm:#2D1B69;--adm2:#5B4FC9;
+  --r:10px;--sh:0 2px 12px rgba(31,78,121,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
+
+/* HEADER */
+.hdr{background:var(--dk);color:#fff;padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.hdr.admin-hdr{background:var(--adm)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-logo{width:34px;height:34px;background:var(--ac);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;color:var(--dk)}
+.brand-name{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:17px}
+.brand-sub{font-size:10px;opacity:.6}
+.upill{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.12);padding:4px 11px 4px 7px;border-radius:20px;cursor:pointer;font-size:12px;white-space:nowrap}
+.upill:hover{background:rgba(255,255,255,.22)}
+.av{width:24px;height:24px;border-radius:50%;background:var(--ac);color:var(--dk);font-weight:700;font-size:10px;display:flex;align-items:center;justify-content:center}
+.av.adm-av{background:#fff;color:var(--adm)}
+
+/* SCREENS */
+.scr{display:none}.scr.on{display:block}
+#s-login.on{display:flex}
+
+/* LOGIN */
+#s-login{min-height:100vh;align-items:center;justify-content:center;background:linear-gradient(135deg,#1F4E79,#2E75B6,#1F4E79);padding:20px;flex-direction:column;gap:12px}
+.lcard{background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.llogo{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+.llogo-box{width:50px;height:50px;background:var(--dk);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--ac);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:20px}
+.llogo-box.adm{background:var(--adm);color:#fff}
+.ltitle{font-family:'Rajdhani',sans-serif;font-size:19px;font-weight:700;color:var(--dk);line-height:1.2}
+.lsub{font-size:11px;color:var(--mu)}
+.lh{font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;margin-bottom:3px}
+.ld{font-size:13px;color:var(--mu);margin-bottom:24px}
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:11px;font-weight:700;color:var(--dk);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+.fg select,.fg input{width:100%;height:42px;border:1.5px solid var(--bo);border-radius:8px;padding:0 13px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--tx);background:#f8fafc;transition:border-color .2s;outline:none}
+.fg select:focus,.fg input:focus{border-color:var(--md);background:#fff}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 18px;height:42px;border-radius:8px;border:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+.bp{background:var(--dk);color:#fff;width:100%}.bp:hover{background:var(--md)}
+.ba{background:var(--adm);color:#fff;width:100%}.ba:hover{background:var(--adm2)}
+.bs{background:var(--ok);color:#fff}.bs:hover{opacity:.9}
+.bc{background:var(--ac);color:var(--dk)}.bc:hover{opacity:.9}
+.bo-btn{background:transparent;color:var(--dk);border:1.5px solid var(--bo)}.bo-btn:hover{border-color:var(--md);background:var(--lt)}
+.bd{background:var(--er);color:#fff}.bd:hover{opacity:.9}
+.bsm{height:34px;padding:0 13px;font-size:12px}
+.login-toggle{text-align:center;margin-top:14px}
+.login-toggle a{font-size:13px;color:var(--md);cursor:pointer;text-decoration:underline}
+.errmsg{background:#FDEDED;border:1px solid #F5C6CB;color:var(--er);padding:9px 13px;border-radius:8px;font-size:12px;margin-top:10px;display:none}
+.notebox{background:#FFF7E6;border:1px solid #FACA74;border-radius:8px;padding:9px 13px;font-size:12px;color:#7A5100;margin-top:12px;line-height:1.6}
+.notebox strong{color:#5A3A00}
+.req{color:var(--er)}
+
+/* APP BODY */
+.abody{max-width:1100px;margin:0 auto;padding:20px 14px 40px}
+
+/* TABS */
+.tabs{display:flex;gap:3px;background:var(--cd);border-radius:var(--r);padding:4px;box-shadow:var(--sh);margin-bottom:20px;border:1px solid var(--bo);flex-wrap:wrap}
+.tbtn{flex:1;min-width:90px;padding:8px 6px;border-radius:7px;border:none;background:transparent;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--mu);cursor:pointer;transition:all .2s;white-space:nowrap}
+.tbtn.on{background:var(--dk);color:#fff;font-weight:700}
+.tbtn.adm-tab.on{background:var(--adm)}
+.tbtn:hover:not(.on){background:var(--lt);color:var(--dk)}
+
+/* PANELS */
+.tpanel{display:none}.tpanel.on{display:block}
+
+/* CARD */
+.card{background:var(--cd);border-radius:var(--r);border:1px solid var(--bo);box-shadow:var(--sh);padding:22px;margin-bottom:18px}
+.ctitle{font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:700;color:var(--dk);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.ctitle.adm{color:var(--adm)}
+.ibadge{width:28px;height:28px;background:var(--lt);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.ibadge.adm{background:#E8E4FF}
+
+/* GRID */
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.fgrid .full{grid-column:1/-1}
+@media(max-width:600px){.fgrid{grid-template-columns:1fr}}
+
+/* BANNER */
+.banner{background:var(--dk);color:#fff;border-radius:var(--r);padding:14px 18px;display:flex;gap:20px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
+.banner.adm{background:var(--adm)}
+.bstat{text-align:center}
+.bval{font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;color:var(--ac);line-height:1}
+.blbl{font-size:10px;opacity:.7;text-transform:uppercase;letter-spacing:.4px;margin-top:1px}
+.bdiv{width:1px;height:36px;background:rgba(255,255,255,.2)}
+.btitle{flex:1}.btitle h2{font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700}
+.btitle p{font-size:11px;opacity:.65;margin-top:1px}
+
+/* COMPARE CELLS */
+.cgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+@media(max-width:550px){.cgrid{grid-template-columns:1fr 1fr}}
+.ccell{background:var(--bg);border-radius:8px;padding:11px 13px;border:1px solid var(--bo)}
+.clbl{font-size:10px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+.cval{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700}
+.ccell.hi{background:#EEF5FC;border-color:var(--lt)}.ccell.hi .cval{color:var(--dk)}
+.ccell.am{background:#E8F5EE;border-color:#9FD4B3}.ccell.am .cval{color:var(--ok)}
+.ccell.df{background:#FFF7E6;border-color:#FACA74}.ccell.df .cval{color:#8B5E00}
+
+/* TABLE */
+.dtbl{width:100%;border-collapse:collapse;font-size:12px}
+.dtbl thead tr{background:var(--dk);color:#fff}
+.dtbl.adm-tbl thead tr{background:var(--adm)}
+.dtbl th{padding:9px 10px;text-align:left;font-weight:600;font-size:11px;letter-spacing:.3px;white-space:nowrap}
+.dtbl td{padding:8px 10px;border-bottom:1px solid var(--bo);vertical-align:middle}
+.dtbl tbody tr:hover{background:#F0F5FA}
+.thumb{width:32px;height:32px;object-fit:cover;border-radius:4px;border:1px solid var(--bo);cursor:pointer}
+.badge{display:inline-block;padding:2px 7px;border-radius:9px;font-size:10px;font-weight:700}
+.bm{background:#EEF5FC;color:var(--dk)}.ba2{background:#FFF7E6;color:#8B5E00}
+.tbar{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.tbar input,.tbar select{height:34px;border:1.5px solid var(--bo);border-radius:7px;padding:0 10px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;background:#fff}
+.tbar input:focus,.tbar select:focus{border-color:var(--md)}
+.tbar input{flex:1;min-width:140px}
+.bico{width:26px;height:26px;border:none;border-radius:5px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s}
+.bico.del{background:#FDEDED;color:var(--er)}.bico.del:hover{background:var(--er);color:#fff}
+.bico.view{background:#EEF5FC;color:var(--dk)}.bico.view:hover{background:var(--md);color:#fff}
+
+/* PHOTO UPLOAD */
+.pzone{border:2px dashed var(--bo);border-radius:var(--r);padding:22px 16px;text-align:center;cursor:pointer;transition:all .2s;background:#f8fafc;position:relative}
+.pzone:hover,.pzone.drag{border-color:var(--md);background:#EEF5FC}
+.pzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.ppgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.ppitem{border-radius:8px;overflow:hidden;border:1.5px solid var(--bo);position:relative}
+.ppitem img{width:100%;height:140px;object-fit:cover;display:block}
+.pplab{position:absolute;bottom:0;left:0;right:0;background:rgba(31,78,121,.85);color:#fff;font-size:10px;font-weight:700;padding:3px 7px;text-align:center}
+.pprm{position:absolute;top:5px;right:5px;background:rgba(192,57,43,.9);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+/* MODAL */
+.mback{position:fixed;inset:0;background:rgba(0,0,0,.76);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px}
+.mback.on{display:flex}
+.mbox{background:var(--cd);border-radius:13px;padding:18px;max-width:520px;width:100%;position:relative;max-height:90vh;overflow-y:auto}
+.mclose{position:absolute;top:9px;right:9px;width:30px;height:30px;border-radius:50%;background:var(--er);color:#fff;border:none;cursor:pointer;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.mtitle{font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;color:var(--dk);margin-bottom:10px}
+
+/* TOAST */
+.tcon{position:fixed;bottom:20px;right:20px;z-index:2000;display:flex;flex-direction:column;gap:7px}
+.toast{background:var(--dk);color:#fff;padding:10px 15px;border-radius:8px;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.2);animation:si .3s ease;max-width:280px}
+.toast.ok{background:var(--ok)}.toast.er{background:var(--er)}.toast.adm{background:var(--adm)}
+@keyframes si{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* CHART */
+.gbar{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.glbl{font-size:11px;width:110px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--tx)}
+.gout{flex:1;height:16px;background:var(--bg);border-radius:4px;overflow:hidden;border:1px solid var(--bo)}
+.gin{height:100%;background:var(--md);border-radius:4px;transition:width .6s ease}
+.gval{font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;color:var(--dk);width:60px;text-align:right;flex-shrink:0}
+
+/* ADMIN PANELS */
+.admin-section{background:#F8F7FF;border:1px solid #D0C8F0;border-radius:var(--r);padding:18px;margin-bottom:16px}
+.asec-title{font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;color:var(--adm);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.office-chip{display:inline-flex;align-items:center;gap:5px;background:#E8E4FF;color:var(--adm);font-size:11px;font-weight:700;padding:4px 10px 4px 10px;border-radius:20px;margin:3px}
+.office-chip button{background:none;border:none;cursor:pointer;color:var(--adm);font-size:14px;line-height:1;padding:0 0 0 3px}
+.office-chip button:hover{color:var(--er)}
+.lnd-chip{display:inline-flex;align-items:center;gap:5px;background:#EEF5FC;color:var(--dk);font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;margin:2px}
+.lnd-chip button{background:none;border:none;cursor:pointer;color:var(--mu);font-size:13px;line-height:1}
+.lnd-chip button:hover{color:var(--er)}
+.rate-badge{display:inline-flex;align-items:center;gap:6px;background:#E8F5EE;color:var(--ok);font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;padding:5px 12px;border-radius:8px;border:1px solid #9FD4B3}
+.office-row{background:#fff;border:1px solid #D0C8F0;border-radius:8px;padding:12px 14px;margin-bottom:10px}
+.office-row-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.office-name-tag{font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;color:var(--adm)}
+.office-meta{font-size:11px;color:var(--mu)}
+.inline-add{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap}
+.inline-add input{flex:1;min-width:140px;height:32px;border:1.5px solid var(--bo);border-radius:7px;padding:0 10px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none}
+.inline-add input:focus{border-color:var(--adm2)}
+.divider{border:none;border-top:1.5px solid var(--bo);margin:16px 0}
+.nodata{text-align:center;padding:32px 16px;color:var(--mu);font-size:13px}
+.nodata-ico{font-size:36px;margin-bottom:6px}
+.adm-stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+@media(max-width:600px){.adm-stat-grid{grid-template-columns:1fr 1fr}}
+.adm-stat{background:#fff;border:1px solid #D0C8F0;border-radius:9px;padding:14px 12px;text-align:center}
+.adm-stat .val{font-family:'Rajdhani',sans-serif;font-size:26px;font-weight:700;color:var(--adm);line-height:1}
+.adm-stat .lbl{font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.month-sel{height:32px;border:1.5px solid var(--bo);border-radius:7px;padding:0 8px;font-size:12px;font-family:'DM Sans',sans-serif;background:#fff;color:var(--tx);outline:none}
+
+/* Tag for office type */
+.otype{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.3px}
+.otype.mri{background:#EEF5FC;color:var(--dk)}
+.otype.bil{background:#FFF7E6;color:#8B5E00}
+.otype.adm{background:#E8E4FF;color:var(--adm)}
+</style>
+</head>
+<body>
+
+<!-- ========== LOGIN SCREEN ========== -->
+<div id="s-login" class="scr on">
+  <div class="lcard" id="lcard-office">
+    <div class="llogo">
+      <div class="llogo-box">SAI</div>
+      <div>
+        <div class="ltitle">Sai Computers Ltd</div>
+        <div class="lsub">DvVNL Office Electricity Portal</div>
+      </div>
+    </div>
+    <div class="lh">Office Login</div>
+    <div class="ld">Select your office and enter password to submit readings.</div>
+    <div class="fg">
+      <label>Office Name <span class="req">*</span></label>
+      <select id="lo-office"><option value="">— Select Office —</option></select>
+    </div>
+    <div class="fg">
+      <label>Password <span class="req">*</span></label>
+      <input type="password" id="lo-pass" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()" />
+    </div>
+    <button class="btn bp" onclick="doLogin()">🔐 Login</button>
+    <div class="errmsg" id="lo-err">❌ Invalid office or password.</div>
+    <div class="notebox">Password for all offices: <strong>SAI123</strong></div>
+    <div class="login-toggle"><a onclick="showAdminLogin()">🔑 Admin Login →</a></div>
+  </div>
+
+  <div class="lcard" id="lcard-admin" style="display:none">
+    <div class="llogo">
+      <div class="llogo-box adm">⚙</div>
+      <div>
+        <div class="ltitle" style="color:var(--adm)">Admin Panel</div>
+        <div class="lsub">DvVNL Electricity — System Administrator</div>
+      </div>
+    </div>
+    <div class="lh" style="color:var(--adm)">Admin Login</div>
+    <div class="ld">Full access: all offices data, configuration, settings.</div>
+    <div class="fg">
+      <label>Admin Password <span class="req">*</span></label>
+      <input type="password" id="la-pass" placeholder="Admin password" onkeydown="if(event.key==='Enter')doAdminLogin()" />
+    </div>
+    <button class="btn ba" onclick="doAdminLogin()">🔑 Admin Login</button>
+    <div class="errmsg" id="la-err">❌ Wrong admin password.</div>
+    <div class="login-toggle"><a onclick="showOfficeLogin()">← Office Login</a></div>
+  </div>
+</div>
+
+<!-- ========== OFFICE APP SCREEN ========== -->
+<div id="s-app" class="scr">
+  <div class="hdr" id="app-hdr">
+    <div class="brand">
+      <div class="brand-logo">SAI</div>
+      <div>
+        <div class="brand-name">DvVNL Electricity Tracker</div>
+        <div class="brand-sub">Sai Computers — DVVNL Field Portal</div>
+      </div>
+    </div>
+    <div class="upill" onclick="doLogout()">
+      <div class="av" id="hdr-av">--</div>
+      <span id="hdr-office">Office</span>&nbsp;· Logout
+    </div>
+  </div>
+  <div class="abody">
+    <div class="banner" id="app-banner">
+      <div class="btitle"><h2 id="bn-office">Office</h2><p id="bn-sub">Month Year</p></div>
+      <div class="bdiv"></div>
+      <div class="bstat"><div class="bval" id="bn-total">0</div><div class="blbl">Records</div></div>
+      <div class="bdiv"></div>
+      <div class="bstat"><div class="bval" id="bn-units">0</div><div class="blbl">Total Units</div></div>
+      <div class="bdiv"></div>
+      <div class="bstat"><div class="bval" id="bn-amt">₹0</div><div class="blbl">Total Amount</div></div>
+    </div>
+    <div class="tabs" id="app-tabs">
+      <button class="tbtn on" onclick="swTab('submit',this)">📝 Submit Reading</button>
+      <button class="tbtn" onclick="swTab('records',this)">📋 My Records</button>
+      <button class="tbtn" onclick="swTab('compare',this)">🔁 Compare</button>
+      <button class="tbtn" onclick="swTab('chart',this)">📊 Chart</button>
+    </div>
+
+    <!-- SUBMIT TAB -->
+    <div class="tpanel on" id="tp-submit">
+      <div class="card">
+        <div class="ctitle"><div class="ibadge">📝</div>Submit Electricity Reading</div>
+        <div class="fgrid">
+          <div class="fg">
+            <label>Month <span class="req">*</span></label>
+            <select id="f-month">
+              <option>MAY-2026</option><option>APR-2026</option><option>MAR-2026</option>
+              <option>FEB-2026</option><option>JAN-2026</option><option>DEC-2025</option><option>NOV-2025</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>Current Reading Date <span class="req">*</span></label>
+            <input type="date" id="f-cdate" />
+          </div>
+          <div class="fg">
+            <label>Landlord Name (As Agreement) <span class="req">*</span></label>
+            <select id="f-landlord"><option value="">— Select Landlord —</option></select>
+          </div>
+          <div class="fg">
+            <label>Electricity Bill Paid To</label>
+            <input type="text" id="f-paidto" placeholder="e.g. Landlord (Sub Meter) / DVVNL" />
+          </div>
+          <div class="fg">
+            <label>Current Reading (KWH) <span class="req">*</span></label>
+            <input type="number" id="f-curr" placeholder="e.g. 4450" oninput="calcDiff()" />
+          </div>
+          <div class="fg">
+            <label>Previous Reading (KWH) <span style="font-size:10px;color:var(--mu)">(auto-filled)</span></label>
+            <input type="number" id="f-prev" readonly style="background:#f0f0f0" />
+          </div>
+          <div class="fg">
+            <label>Previous Reading Date</label>
+            <input type="date" id="f-pdate" readonly style="background:#f0f0f0" />
+          </div>
+          <div class="fg">
+            <label>Rate Per Unit (₹) <span style="font-size:10px;color:var(--mu)">(admin configured)</span></label>
+            <input type="number" id="f-rate" step="0.5" readonly style="background:#f0f0f0" />
+          </div>
+        </div>
+        <div id="calc-res" style="display:none;margin:10px 0">
+          <div class="cgrid">
+            <div class="ccell hi"><div class="clbl">Previous KWH</div><div class="cval" id="r-prev">—</div></div>
+            <div class="ccell hi"><div class="clbl">Current KWH</div><div class="cval" id="r-curr">—</div></div>
+            <div class="ccell df"><div class="clbl">Units Used</div><div class="cval" id="r-diff">—</div></div>
+            <div class="ccell am"><div class="clbl">Est. Amount (₹)</div><div class="cval" id="r-amt">—</div></div>
+          </div>
+        </div>
+        <hr class="divider" />
+        <div class="fgrid">
+          <div class="fg full">
+            <label>Upload Meter Photo(s) <span class="req">*</span></label>
+            <div class="pzone" id="pzone">
+              <input type="file" accept="image/*" multiple id="photo-inp" onchange="handlePhotos(this)" />
+              <div style="font-size:32px;margin-bottom:6px">📷</div>
+              <div style="font-size:13px;font-weight:600;color:var(--dk)">Click or drag to upload meter photos</div>
+              <div style="font-size:11px;color:var(--mu);margin-top:3px">JPG, PNG — Max 5MB each · Multiple photos allowed</div>
+            </div>
+            <div class="ppgrid" id="pp-grid"></div>
+          </div>
+          <div class="fg full">
+            <label>Remarks / Notes</label>
+            <input type="text" id="f-remarks" placeholder="Any special notes, issues, fixed amount, etc." />
+          </div>
+        </div>
+        <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:10px">
+          <button class="btn bs" onclick="saveReading()">✅ Save Record</button>
+          <button class="btn bo-btn" onclick="clearForm()">🗑 Clear Form</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECORDS TAB -->
+    <div class="tpanel" id="tp-records">
+      <div class="card">
+        <div class="ctitle"><div class="ibadge">📋</div>My Submitted Records</div>
+        <div class="tbar">
+          <input type="text" id="srch" placeholder="🔍 Search..." oninput="renderRecs()" />
+          <select class="month-sel" id="fil-mon" onchange="renderRecs()">
+            <option value="">All Months</option>
+            <option>MAY-2026</option><option>APR-2026</option><option>MAR-2026</option>
+            <option>FEB-2026</option><option>JAN-2026</option><option>DEC-2025</option><option>NOV-2025</option>
+          </select>
+          <button class="btn bc bsm" onclick="exportXL('office')">⬇ Export Excel</button>
+          <button class="btn bo-btn bsm" onclick="retrySyncAll()" title="Retry failed syncs">🔄 Retry Sync</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="dtbl">
+            <thead><tr>
+              <th>#</th><th>Month</th><th>Date</th><th>Landlord (Agreement)</th>
+              <th>Prev KWH</th><th>Curr KWH</th><th>Units</th><th>Rate</th><th>Amount ₹</th>
+              <th>Photo</th><th>Sync</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="recs-body"></tbody>
+          </table>
+        </div>
+        <div id="no-recs" class="nodata" style="display:none">
+          <div class="nodata-ico">📭</div>No records yet. Submit a reading first.
+        </div>
+      </div>
+      <div class="notebox">
+        <strong>📤 OneDrive Sync:</strong> Click <strong>Export Excel</strong> → upload to your OneDrive/SharePoint folder.<br>
+        Data saves in browser localStorage — export regularly!
+      </div>
+    </div>
+
+    <!-- COMPARE TAB -->
+    <div class="tpanel" id="tp-compare">
+      <div class="card">
+        <div class="ctitle"><div class="ibadge">🔁</div>Month Comparison</div>
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:flex-end">
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--mu);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Month A</label>
+            <select class="month-sel" id="cmp-a" onchange="renderCmp()">
+              <option value="">—</option>
+              <option>MAY-2026</option><option>APR-2026</option><option>MAR-2026</option>
+              <option>FEB-2026</option><option>JAN-2026</option><option>DEC-2025</option><option>NOV-2025</option>
+            </select>
+          </div>
+          <div style="font-size:18px;padding-bottom:2px">⇄</div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--mu);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Month B</label>
+            <select class="month-sel" id="cmp-b" onchange="renderCmp()">
+              <option value="">—</option>
+              <option>MAY-2026</option><option>APR-2026</option><option>MAR-2026</option>
+              <option>FEB-2026</option><option>JAN-2026</option><option>DEC-2025</option><option>NOV-2025</option>
+            </select>
+          </div>
+        </div>
+        <div id="cmp-out"><div class="nodata"><div class="nodata-ico">🔁</div>Select two months to compare.</div></div>
+      </div>
+    </div>
+
+    <!-- CHART TAB -->
+    <div class="tpanel" id="tp-chart">
+      <div class="card">
+        <div class="ctitle"><div class="ibadge">📊</div>Monthly Units Trend</div>
+        <div id="chart-units"><div class="nodata"><div class="nodata-ico">📊</div>No data yet.</div></div>
+      </div>
+      <div class="card">
+        <div class="ctitle"><div class="ibadge">💰</div>Monthly Amount Trend (₹)</div>
+        <div id="chart-amt"><div class="nodata"><div class="nodata-ico">💰</div>No data yet.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== ADMIN SCREEN ========== -->
+<div id="s-admin" class="scr">
+  <div class="hdr admin-hdr">
+    <div class="brand">
+      <div class="brand-logo" style="background:#fff;color:var(--adm)">⚙</div>
+      <div>
+        <div class="brand-name">Admin Panel — DvVNL Electricity</div>
+        <div class="brand-sub">Sai Computers Ltd · Full System Access</div>
+      </div>
+    </div>
+    <div class="upill" onclick="doAdminLogout()">
+      <div class="av adm-av">AD</div>
+      Administrator &nbsp;· Logout
+    </div>
+  </div>
+  <div class="abody">
+    <div class="banner adm">
+      <div class="btitle"><h2>Admin Dashboard</h2><p>All offices · All records · Full configuration</p></div>
+      <div class="bdiv"></div>
+      <div class="bstat"><div class="bval" id="abn-offices">0</div><div class="blbl">Offices</div></div>
+      <div class="bdiv"></div>
+      <div class="bstat"><div class="bval" id="abn-recs">0</div><div class="blbl">Total Records</div></div>
+      <div class="bdiv"></div>
+      <div class="bstat"><div class="bval" id="abn-units">0</div><div class="blbl">Total Units</div></div>
+      <div class="bdiv"></div>
+      <div class="bstat"><div class="bval" id="abn-amt">₹0</div><div class="blbl">Total Amount</div></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tbtn adm-tab on" onclick="swAdmTab('overview',this)">📊 Overview</button>
+      <button class="tbtn adm-tab" onclick="swAdmTab('alldata',this)">📋 All Data</button>
+      <button class="tbtn adm-tab" onclick="swAdmTab('offices',this)">🏢 Offices</button>
+      <button class="tbtn adm-tab" onclick="swAdmTab('config',this)">⚙ Config</button>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div class="tpanel on" id="atp-overview">
+      <div class="card" style="border-color:#D0C8F0">
+        <div class="ctitle adm"><div class="ibadge adm">📊</div>Office-wise Summary (All Months)</div>
+        <div style="overflow-x:auto">
+          <table class="dtbl adm-tbl" id="adm-summary-tbl">
+            <thead><tr>
+              <th>#</th><th>Office Name</th><th>Type</th><th>Records</th>
+              <th>Total Units</th><th>Total Amount ₹</th><th>Last Submission</th>
+            </tr></thead>
+            <tbody id="adm-sum-body"></tbody>
+          </table>
+        </div>
+        <div id="adm-sum-nodata" class="nodata" style="display:none">
+          <div class="nodata-ico">📭</div>No records from any office yet.
+        </div>
+      </div>
+
+      <div class="card" style="border-color:#D0C8F0">
+        <div class="ctitle adm"><div class="ibadge adm">📊</div>Top Offices by Consumption</div>
+        <div id="adm-chart-units"></div>
+      </div>
+    </div>
+
+    <!-- ALL DATA -->
+    <div class="tpanel" id="atp-alldata">
+      <div class="card" style="border-color:#D0C8F0">
+        <div class="ctitle adm"><div class="ibadge adm">📋</div>All Records — Every Office</div>
+        <div class="tbar">
+          <input type="text" id="adm-srch" placeholder="🔍 Search office, landlord, month..." oninput="renderAllData()" />
+          <select class="month-sel" id="adm-fil-mon" onchange="renderAllData()">
+            <option value="">All Months</option>
+            <option>MAY-2026</option><option>APR-2026</option><option>MAR-2026</option>
+            <option>FEB-2026</option><option>JAN-2026</option><option>DEC-2025</option><option>NOV-2025</option>
+          </select>
+          <select class="month-sel" id="adm-fil-off" onchange="renderAllData()"><option value="">All Offices</option></select>
+          <button class="btn bc bsm" onclick="exportXL('admin')">⬇ Export All Excel</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="dtbl adm-tbl">
+            <thead><tr>
+              <th>#</th><th>Office</th><th>Month</th><th>Date</th><th>Landlord (Agreement)</th>
+              <th>Prev KWH</th><th>Curr KWH</th><th>Units</th><th>Rate</th><th>Amount ₹</th>
+              <th>Photo</th><th>Del</th>
+            </tr></thead>
+            <tbody id="all-data-body"></tbody>
+          </table>
+        </div>
+        <div id="all-data-nodata" class="nodata" style="display:none">
+          <div class="nodata-ico">📭</div>No records found.
+        </div>
+      </div>
+    </div>
+
+    <!-- OFFICES CONFIG -->
+    <div class="tpanel" id="atp-offices">
+      <div class="card" style="border-color:#D0C8F0">
+        <div class="ctitle adm"><div class="ibadge adm">🏢</div>Manage Offices &amp; Landlords</div>
+
+        <div class="admin-section">
+          <div class="asec-title">➕ Add New Office</div>
+          <div class="fgrid" style="margin-bottom:10px">
+            <div class="fg">
+              <label>Office Name <span class="req">*</span></label>
+              <input type="text" id="new-office-name" placeholder="e.g. AGRA_NEW_MRI" />
+            </div>
+            <div class="fg">
+              <label>Office Type</label>
+              <select id="new-office-type">
+                <option value="MRI">MRI Office</option>
+                <option value="BILLING">Billing Office</option>
+                <option value="ADMIN">Admin / Other</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn bs bsm" onclick="addOffice()">➕ Add Office</button>
+        </div>
+
+        <div id="offices-list"></div>
+      </div>
+    </div>
+
+    <!-- CONFIG -->
+    <div class="tpanel" id="atp-config">
+      <div class="card" style="border-color:#D0C8F0">
+        <div class="ctitle adm"><div class="ibadge adm">⚙</div>Global Configuration</div>
+
+        <div class="admin-section">
+          <div class="asec-title">💡 Rate Per Unit (₹) — Global Default</div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <div class="rate-badge">₹ <span id="cur-global-rate">8</span> / unit</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="number" id="new-global-rate" placeholder="New rate" min="1" max="50" step="0.5" style="height:34px;width:100px;border:1.5px solid var(--bo);border-radius:7px;padding:0 10px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none" />
+              <button class="btn bs bsm" onclick="saveGlobalRate()">Save Rate</button>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--mu);margin-top:8px">This rate applies to all offices unless office has a custom rate. Office users cannot change the rate.</div>
+        </div>
+
+        <div class="admin-section">
+          <div class="asec-title">🔐 Change Admin Password</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <input type="password" id="new-adm-pass" placeholder="New admin password" style="height:34px;flex:1;min-width:180px;border:1.5px solid var(--bo);border-radius:7px;padding:0 10px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none" />
+            <button class="btn ba bsm" onclick="changeAdmPass()">Change Password</button>
+          </div>
+        </div>
+
+        <div class="admin-section">
+          <div class="asec-title">🔐 Change Office User Password</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <input type="password" id="new-usr-pass" placeholder="New office user password" style="height:34px;flex:1;min-width:180px;border:1.5px solid var(--bo);border-radius:7px;padding:0 10px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none" />
+            <button class="btn bp bsm" onclick="changeUsrPass()">Change Password</button>
+          </div>
+          <div style="font-size:11px;color:var(--mu);margin-top:6px">Current office password: <strong id="show-usr-pass">SAI123</strong></div>
+        </div>
+
+        <div class="admin-section">
+          <div class="asec-title">📊 Google Sheets Integration</div>
+          <div style="font-size:12px;color:var(--tx);margin-bottom:8px">Data automatically syncs to Google Sheet on every submission.</div>
+          <a href="https://script.google.com/macros/s/AKfycbzqaHKVSecUl6d_4Dp7nvupbRBNi1nUy2-er5wS8mJ2Kvouo7HPAwgBQQxcf3BsngSj/exec" target="_blank" style="font-size:11px;color:var(--md);word-break:break-all">🔗 API Endpoint (Active)</a>
+          <div style="margin-top:10px">
+            <a href="https://drive.google.com" target="_blank" class="btn bs bsm" style="text-decoration:none;display:inline-flex">📊 Open Google Drive</a>
+          </div>
+        </div>
+
+        <div class="admin-section">
+          <div class="asec-title">📦 Data Management</div>
+          <div style="display:flex;gap:9px;flex-wrap:wrap">
+            <button class="btn bc bsm" onclick="exportXL('admin')">⬇ Export All Data (Excel)</button>
+            <button class="btn bd bsm" onclick="dangerClearAll()">⚠ Clear ALL Data</button>
+          </div>
+          <div style="font-size:11px;color:var(--mu);margin-top:6px">Export data before clearing. This action cannot be undone.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PHOTO MODAL -->
+<div class="mback" id="photo-modal" onclick="if(event.target===this)this.classList.remove('on')">
+  <div class="mbox">
+    <button class="mclose" onclick="document.getElementById('photo-modal').classList.remove('on')">✕</button>
+    <div class="mtitle" id="modal-title">Meter Photo</div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<div class="tcon" id="tcon"></div>
+
+<script>
+// ============ CONFIG / STORAGE ============
+const CFG_KEY = 'dvvnl_cfg';
+const MONTHS = ['NOV-2025','DEC-2025','JAN-2026','FEB-2026','MAR-2026','APR-2026','MAY-2026'];
+
+function loadCfg() {
+  try { return JSON.parse(localStorage.getItem(CFG_KEY)) || null; } catch { return null; }
+}
+function saveCfg(c) { localStorage.setItem(CFG_KEY, JSON.stringify(c)); }
+
+function initCfg() {
+  let c = loadCfg();
+  if (!c) {
+    c = {
+      adminPass: 'ADMIN@SAI',
+      officePass: 'SAI123',
+      globalRate: 8,
+      offices: [
+        { name:'AGRA GUEST HOUSE_MRI', type:'MRI', landlords:['PAID BY TAMREZ ALAM'] },
+        { name:'AGRA OFFICE_MRI', type:'MRI', landlords:['PAID BY TAMREZ ALAM'] },
+        { name:'Auriyya (Kanpur)_MRI', type:'MRI', landlords:['RAJEEV SHUKLA'] },
+        { name:'CHIBRAMAU_MRI', type:'MRI', landlords:['SONI'] },
+        { name:'Chitrakoot_MRI', type:'MRI', landlords:['SUDHA KUSHWAHA'] },
+        { name:'ETAH_MRI', type:'MRI', landlords:[] },
+        { name:'ETWAH_MRI', type:'MRI', landlords:['MANJU LATA DRIWEDI'] },
+        { name:'FARUKKABAD_MRI', type:'MRI', landlords:['VITOLI DEVI'] },
+        { name:'FIROZABAD_MRI', type:'MRI', landlords:['RAKESH SINGH RAJAWAT'] },
+        { name:'HAMIRPUR_MRI', type:'MRI', landlords:['DINESH KUSHWAHA'] },
+        { name:'HATHRAS_MRI', type:'MRI', landlords:['BEENA'] },
+        { name:'JHANSI_MRI', type:'MRI', landlords:['Surendra Singh wadhwa'] },
+        { name:'KANNUJ_MRI', type:'MRI', landlords:['RAVINDRA KUMAR SHUKLA'] },
+        { name:'KANPUR_MRI', type:'MRI', landlords:['MAHESHWARI TOMAR'] },
+        { name:'MAHOBA_MRI', type:'MRI', landlords:['KAMLESH'] },
+        { name:'MAINPURI_MRI', type:'MRI', landlords:[] },
+        { name:'MATHURA_MRI', type:'MRI', landlords:['Rajani'] },
+        { name:'ORAI (Jhansi)_MRI', type:'MRI', landlords:['Ashish Gupta'] },
+        { name:'RANIYA (KANPUR DEHAT)_MRI', type:'MRI', landlords:['TILAK RAJ GUPTA'] },
+        { name:'ALIGARH_BILLING', type:'BILLING', landlords:['SUNITA DEVI'] },
+        { name:'ETAH_BILLING', type:'BILLING', landlords:['Prabhakar gupta'] },
+        { name:'KASHGANJ_BILLING', type:'BILLING', landlords:['Shishupal Singh'] },
+        { name:'HATHRAS_BILLING', type:'BILLING', landlords:[] },
+        { name:'HEAD OFFICE - AGRA', type:'ADMIN', landlords:[] },
+      ]
+    };
+    saveCfg(c);
+  }
+  return c;
+}
+
+let CFG = initCfg();
+let curOffice = '';
+let photos = [];
+
+// ============ UTILS ============
+function toast(msg, type='') {
+  const tc = document.getElementById('tcon');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  tc.appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+function recKey(office) {
+  return 'dvvnl_rec_' + office.replace(/[^a-zA-Z0-9]/g,'_').toLowerCase();
+}
+function getRecs(office) {
+  try { return JSON.parse(localStorage.getItem(recKey(office)) || '[]'); } catch { return []; }
+}
+function setRecs(office, recs) {
+  localStorage.setItem(recKey(office), JSON.stringify(recs));
+}
+function getAllRecs() {
+  let all = [];
+  CFG.offices.forEach(o => {
+    getRecs(o.name).forEach(r => all.push({...r, _office: o.name}));
+  });
+  return all;
+}
+
+// ============ LOGIN ============
+function showAdminLogin() {
+  document.getElementById('lcard-office').style.display = 'none';
+  document.getElementById('lcard-admin').style.display = 'block';
+}
+function showOfficeLogin() {
+  document.getElementById('lcard-admin').style.display = 'none';
+  document.getElementById('lcard-office').style.display = 'block';
+}
+
+function populateOfficeSelect() {
+  const sel = document.getElementById('lo-office');
+  sel.innerHTML = '<option value="">— Select Office —</option>';
+  const groups = { MRI:'MRI Offices', BILLING:'Billing Offices', ADMIN:'Admin / Other' };
+  const byType = {};
+  CFG.offices.forEach(o => { if(!byType[o.type]) byType[o.type] = []; byType[o.type].push(o); });
+  Object.keys(groups).forEach(t => {
+    if (!byType[t]?.length) return;
+    const og = document.createElement('optgroup');
+    og.label = groups[t];
+    byType[t].forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o.name; opt.textContent = o.name;
+      og.appendChild(opt);
+    });
+    sel.appendChild(og);
+  });
+}
+
+function doLogin() {
+  const off = document.getElementById('lo-office').value.trim();
+  const pw = document.getElementById('lo-pass').value.trim();
+  const errEl = document.getElementById('lo-err');
+  if (!off) { errEl.style.display='block'; errEl.textContent='❌ Please select your office.'; return; }
+  if (pw !== CFG.officePass) { errEl.style.display='block'; errEl.textContent='❌ Wrong password.'; return; }
+  errEl.style.display='none';
+  curOffice = off;
+  const abbr = off.split(/[\s_]+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('hdr-av').textContent = abbr;
+  document.getElementById('hdr-office').textContent = off.length > 22 ? off.slice(0,22)+'…' : off;
+  document.getElementById('bn-office').textContent = off;
+  document.getElementById('f-cdate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('f-rate').value = CFG.globalRate;
+  populateLandlordSelect();
+  prefillPrev();
+  updateBanner();
+  document.getElementById('s-login').classList.remove('on');
+  document.getElementById('s-app').classList.add('on');
+  swTab('submit', document.querySelector('#app-tabs .tbtn'));
+  renderRecs();
+  renderCharts();
+}
+
+function doAdminLogin() {
+  const pw = document.getElementById('la-pass').value.trim();
+  if (pw !== CFG.adminPass) {
+    document.getElementById('la-err').style.display='block'; return;
+  }
+  document.getElementById('la-err').style.display='none';
+  document.getElementById('s-login').classList.remove('on');
+  document.getElementById('s-admin').classList.add('on');
+  swAdmTab('overview', document.querySelector('#s-admin .tbtn.adm-tab'));
+  updateAdminBanner();
+  renderAdmSummary();
+  renderAdmChart();
+  renderOfficesList();
+  renderAllData();
+  populateAdmOfficeFilter();
+  document.getElementById('cur-global-rate').textContent = CFG.globalRate;
+  document.getElementById('show-usr-pass').textContent = CFG.officePass;
+}
+
+function doLogout() {
+  if (!confirm('Logout?')) return;
+  curOffice = ''; photos = [];
+  clearForm();
+  document.getElementById('s-app').classList.remove('on');
+  document.getElementById('s-login').classList.add('on');
+  document.getElementById('lo-pass').value = '';
+  document.getElementById('lo-office').value = '';
+  document.getElementById('lcard-office').style.display = 'block';
+  document.getElementById('lcard-admin').style.display = 'none';
+}
+
+function doAdminLogout() {
+  document.getElementById('s-admin').classList.remove('on');
+  document.getElementById('s-login').classList.add('on');
+  document.getElementById('la-pass').value = '';
+  document.getElementById('lcard-office').style.display = 'block';
+  document.getElementById('lcard-admin').style.display = 'none';
+}
+
+// ============ LANDLORD SELECT ============
+function populateLandlordSelect() {
+  const sel = document.getElementById('f-landlord');
+  sel.innerHTML = '<option value="">— Select Landlord (As Agreement) —</option>';
+  const off = CFG.offices.find(o => o.name === curOffice);
+  if (off && off.landlords.length) {
+    off.landlords.forEach(l => {
+      const opt = document.createElement('option');
+      opt.value = l; opt.textContent = l;
+      sel.appendChild(opt);
+    });
+  } else {
+    const opt = document.createElement('option'); opt.value='N/A'; opt.textContent='N/A (No landlord listed)';
+    sel.appendChild(opt);
+  }
+}
+
+// ============ PREFILL ============
+function prefillPrev() {
+  const recs = getRecs(curOffice);
+  if (!recs.length) return;
+  const last = recs[recs.length-1];
+  document.getElementById('f-prev').value = last.currReading || '';
+  document.getElementById('f-pdate').value = last.currDate || '';
+}
+
+// ============ CALC ============
+function calcDiff() {
+  const curr = parseFloat(document.getElementById('f-curr').value);
+  const prev = parseFloat(document.getElementById('f-prev').value) || 0;
+  const rate = parseFloat(document.getElementById('f-rate').value) || CFG.globalRate;
+  const res = document.getElementById('calc-res');
+  if (isNaN(curr)) { res.style.display='none'; return; }
+  res.style.display='block';
+  const diff = curr - prev;
+  const amt = diff * rate;
+  document.getElementById('r-prev').textContent = prev || '—';
+  document.getElementById('r-curr').textContent = curr;
+  document.getElementById('r-diff').textContent = diff >= 0 ? diff : '⚠ Negative';
+  document.getElementById('r-amt').textContent = '₹' + Math.round(amt).toLocaleString('en-IN');
+}
+
+// ============ PHOTOS ============
+function handlePhotos(inp) {
+  Array.from(inp.files).forEach(f => {
+    if (f.size > 5*1024*1024) { toast('Photo too large: '+f.name,'er'); return; }
+    const r = new FileReader();
+    r.onload = e => { photos.push({name:f.name, dataUrl:e.target.result}); renderPP(); };
+    r.readAsDataURL(f);
+  });
+}
+function renderPP() {
+  const g = document.getElementById('pp-grid');
+  g.innerHTML = '';
+  photos.forEach((p,i) => {
+    const d = document.createElement('div'); d.className='ppitem';
+    d.innerHTML = `<img src="${p.dataUrl}" /><div class="pplab">📷 ${p.name.slice(0,18)}</div><button class="pprm" onclick="rmPhoto(${i})">✕</button>`;
+    g.appendChild(d);
+  });
+}
+function rmPhoto(i) { photos.splice(i,1); renderPP(); }
+
+// ============ SAVE ============
+function saveReading() {
+  const month = document.getElementById('f-month').value;
+  const cdate = document.getElementById('f-cdate').value;
+  const landlord = document.getElementById('f-landlord').value.trim();
+  const curr = parseFloat(document.getElementById('f-curr').value);
+  const prev = parseFloat(document.getElementById('f-prev').value) || null;
+  const pdate = document.getElementById('f-pdate').value || null;
+  const rate = parseFloat(document.getElementById('f-rate').value) || CFG.globalRate;
+  const paidto = document.getElementById('f-paidto').value.trim();
+  const remarks = document.getElementById('f-remarks').value.trim();
+
+  if (!month || !cdate || isNaN(curr)) { toast('Please fill Month, Date, Current Reading.','er'); return; }
+  if (!landlord) { toast('Landlord Name (As Agreement) is compulsory!','er'); return; }
+  if (!photos.length) { toast('Please upload at least one meter photo.','er'); return; }
+
+  const diff = prev !== null ? (curr - prev) : null;
+  const amount = diff !== null ? Math.round(diff * rate) : null;
+
+  const rec = {
+    id: Date.now(),
+    savedAt: new Date().toLocaleString('en-IN'),
+    office: curOffice, month, currDate: cdate, currReading: curr,
+    prevReading: prev, prevDate: pdate, rate, diff, amount,
+    landlord, paidTo: paidto, remarks,
+    photos: photos.map(p => ({name:p.name, dataUrl:p.dataUrl}))
+  };
+
+  const recs = getRecs(curOffice);
+  recs.push(rec);
+  setRecs(curOffice, recs);
+  toast('✅ Record saved locally!','ok');
+  clearForm(); updateBanner(); renderRecs(); renderCharts();
+  syncToSheet(rec);
+}
+
+function clearForm() {
+  ['f-curr','f-remarks','f-paidto'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('f-landlord').value = '';
+  document.getElementById('calc-res').style.display='none';
+  photos = []; renderPP(); prefillPrev();
+}
+
+// ============ TABS ============
+function swTab(name, btn) {
+  document.querySelectorAll('#app-tabs .tbtn').forEach(b => b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  else {
+    const tabs = ['submit','records','compare','chart'];
+    document.querySelectorAll('#app-tabs .tbtn')[tabs.indexOf(name)]?.classList.add('on');
+  }
+  ['submit','records','compare','chart'].forEach(n => {
+    document.getElementById('tp-'+n).classList.toggle('on', n===name);
+  });
+  if(name==='records') renderRecs();
+  if(name==='compare') renderCmp();
+  if(name==='chart') renderCharts();
+}
+function swAdmTab(name, btn) {
+  document.querySelectorAll('#s-admin .tbtn.adm-tab').forEach(b => b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  ['overview','alldata','offices','config'].forEach(n => {
+    document.getElementById('atp-'+n).classList.toggle('on', n===name);
+  });
+  if(name==='overview') { renderAdmSummary(); renderAdmChart(); }
+  if(name==='alldata') { renderAllData(); populateAdmOfficeFilter(); }
+  if(name==='offices') renderOfficesList();
+}
+
+// ============ BANNER ============
+function updateBanner() {
+  const recs = getRecs(curOffice);
+  document.getElementById('bn-total').textContent = recs.length;
+  const tu = recs.reduce((s,r)=>s+(r.diff||0),0);
+  const ta = recs.reduce((s,r)=>s+(r.amount||0),0);
+  document.getElementById('bn-units').textContent = tu;
+  document.getElementById('bn-amt').textContent = '₹'+Math.round(ta).toLocaleString('en-IN');
+  document.getElementById('bn-sub').textContent = new Date().toLocaleString('en-IN',{month:'long',year:'numeric'});
+}
+function updateAdminBanner() {
+  const all = getAllRecs();
+  document.getElementById('abn-offices').textContent = CFG.offices.length;
+  document.getElementById('abn-recs').textContent = all.length;
+  const tu = all.reduce((s,r)=>s+(r.diff||0),0);
+  const ta = all.reduce((s,r)=>s+(r.amount||0),0);
+  document.getElementById('abn-units').textContent = tu;
+  document.getElementById('abn-amt').textContent = '₹'+Math.round(ta).toLocaleString('en-IN');
+}
+
+// ============ RENDER RECORDS ============
+function renderRecs() {
+  const recs = getRecs(curOffice);
+  const srch = (document.getElementById('srch')?.value||'').toLowerCase();
+  const mon = document.getElementById('fil-mon')?.value||'';
+  const filtered = recs.filter(r => {
+    const hay = [r.month,r.landlord,r.paidTo,r.currDate,r.remarks].join(' ').toLowerCase();
+    return (!srch||hay.includes(srch)) && (!mon||r.month===mon);
+  });
+  const body = document.getElementById('recs-body');
+  const noEl = document.getElementById('no-recs');
+  body.innerHTML='';
+  if(!filtered.length) { noEl.style.display='block'; return; }
+  noEl.style.display='none';
+  filtered.forEach((r,i) => {
+    const ph = r.photos?.length ? `<img src="${r.photos[0].dataUrl}" class="thumb" onclick="viewPhotos('${r.id}','${curOffice}')" />` : '—';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${i+1}</td>
+      <td><span class="badge ${r.month.includes('MAY')?'bm':'ba2'}">${r.month}</span></td>
+      <td style="white-space:nowrap">${r.currDate||'—'}</td>
+      <td style="font-weight:600;color:var(--adm)">${r.landlord||'—'}</td>
+      <td>${r.prevReading??'—'}</td>
+      <td style="font-weight:700">${r.currReading}</td>
+      <td style="color:var(--dk);font-weight:700">${r.diff??'—'}</td>
+      <td>₹${r.rate}/u</td>
+      <td style="color:var(--ok);font-weight:700">${r.amount!==null?'₹'+r.amount.toLocaleString('en-IN'):'—'}</td>
+      <td>${ph}</td>
+      <td>${r.synced ? '<span style="color:var(--ok);font-size:11px;font-weight:700">✅ Synced</span>' : '<span style="color:var(--er);font-size:11px;font-weight:700">⏳ Pending</span>'}</td>
+      <td><button class="bico del" onclick="delRec('${r.id}','${curOffice}')">✕</button></td>`;
+    body.appendChild(tr);
+  });
+}
+
+function delRec(id, office) {
+  if(!confirm('Delete this record?')) return;
+  const recs = getRecs(office).filter(r=>String(r.id)!==String(id));
+  setRecs(office, recs);
+  if(office===curOffice) { renderRecs(); updateBanner(); renderCharts(); }
+  else { renderAllData(); updateAdminBanner(); renderAdmSummary(); renderAdmChart(); }
+  toast('Deleted.','er');
+}
+
+// ============ VIEW PHOTOS ============
+function viewPhotos(id, office) {
+  const recs = getRecs(office);
+  const rec = recs.find(r=>String(r.id)===String(id));
+  if(!rec?.photos?.length) return;
+  const mc = document.getElementById('modal-content');
+  mc.innerHTML='';
+  rec.photos.forEach((p,i) => {
+    const d = document.createElement('div'); d.style.marginBottom='10px';
+    d.innerHTML=`<div style="font-size:11px;color:var(--mu);margin-bottom:3px">Photo ${i+1}: ${p.name}</div><img src="${p.dataUrl}" style="width:100%;border-radius:7px;max-height:280px;object-fit:contain;background:#000;display:block" />`;
+    mc.appendChild(d);
+  });
+  document.getElementById('modal-title').textContent = `${rec.office||office} — ${rec.month} (${rec.photos.length} photo${rec.photos.length>1?'s':''})`;
+  document.getElementById('photo-modal').classList.add('on');
+}
+
+// ============ COMPARE ============
+function renderCmp() {
+  const a = document.getElementById('cmp-a').value;
+  const b = document.getElementById('cmp-b').value;
+  const out = document.getElementById('cmp-out');
+  if(!a||!b) return;
+  const recs = getRecs(curOffice);
+  const ra = recs.filter(r=>r.month===a), rb = recs.filter(r=>r.month===b);
+  const su = arr=>arr.reduce((s,r)=>s+(r.diff||0),0);
+  const sa = arr=>arr.reduce((s,r)=>s+(r.amount||0),0);
+  const ua=su(ra),ub=su(rb),aa=sa(ra),ab=sa(rb);
+  const du=ub-ua, da=ab-aa;
+  const sign=v=>v>=0?'+':'';
+  const col=v=>v>=0?'var(--er)':'var(--ok)';
+  out.innerHTML=`
+    <div class="cgrid" style="grid-template-columns:repeat(2,1fr);margin-bottom:12px">
+      <div class="ccell hi"><div class="clbl">${a} — Records</div><div class="cval">${ra.length}</div></div>
+      <div class="ccell hi"><div class="clbl">${b} — Records</div><div class="cval">${rb.length}</div></div>
+    </div>
+    <div class="cgrid">
+      <div class="ccell"><div class="clbl">${a} Units</div><div class="cval">${ua}</div></div>
+      <div class="ccell"><div class="clbl">${b} Units</div><div class="cval">${ub}</div></div>
+      <div class="ccell df"><div class="clbl">Δ Units</div><div class="cval" style="color:${col(-du)}">${sign(du)}${du}</div></div>
+      <div class="ccell am"><div class="clbl">Δ Amount ₹</div><div class="cval" style="color:${col(-da)}">${sign(da)}₹${Math.abs(da).toLocaleString('en-IN')}</div></div>
+    </div>
+    <div style="margin-top:12px;font-size:12px;color:var(--mu)">
+      ${du>0?'⚠ Units increased by '+du+' KWH':du<0?'✅ Units decreased by '+Math.abs(du)+' KWH — good!':'→ Same consumption.'}
+    </div>
+    ${!ra.length||!rb.length?'<div class="notebox" style="margin-top:10px">⚠ One or both months have no records.</div>':''}
+  `;
+}
+
+// ============ CHARTS ============
+function renderCharts() {
+  const recs = getRecs(curOffice);
+  const byM={};
+  recs.forEach(r=>{ if(!byM[r.month]) byM[r.month]={u:0,a:0}; byM[r.month].u+=(r.diff||0); byM[r.month].a+=(r.amount||0); });
+  const mons = MONTHS.filter(m=>byM[m]);
+  if(!mons.length) {
+    document.getElementById('chart-units').innerHTML='<div class="nodata"><div class="nodata-ico">📊</div>No data yet.</div>';
+    document.getElementById('chart-amt').innerHTML='<div class="nodata"><div class="nodata-ico">💰</div>No data yet.</div>';
+    return;
+  }
+  const mu=Math.max(...mons.map(m=>byM[m].u),1);
+  const ma=Math.max(...mons.map(m=>byM[m].a),1);
+  document.getElementById('chart-units').innerHTML = mons.map(m=>`
+    <div class="gbar"><div class="glbl">${m}</div><div class="gout"><div class="gin" style="width:${Math.round(byM[m].u/mu*100)}%"></div></div><div class="gval">${byM[m].u}u</div></div>`).join('');
+  document.getElementById('chart-amt').innerHTML = mons.map(m=>`
+    <div class="gbar"><div class="glbl">${m}</div><div class="gout"><div class="gin" style="width:${Math.round(byM[m].a/ma*100)}%;background:var(--ok)"></div></div><div class="gval">₹${Math.round(byM[m].a).toLocaleString('en-IN')}</div></div>`).join('');
+}
+
+// ============ ADMIN SUMMARY ============
+function renderAdmSummary() {
+  const body = document.getElementById('adm-sum-body');
+  const noEl = document.getElementById('adm-sum-nodata');
+  body.innerHTML='';
+  let hasAny=false;
+  CFG.offices.forEach((o,i) => {
+    const recs=getRecs(o.name);
+    if(!recs.length) return;
+    hasAny=true;
+    const tu=recs.reduce((s,r)=>s+(r.diff||0),0);
+    const ta=recs.reduce((s,r)=>s+(r.amount||0),0);
+    const last=recs[recs.length-1];
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${i+1}</td>
+      <td style="font-weight:600">${o.name}</td>
+      <td><span class="otype ${o.type.toLowerCase()}">${o.type}</span></td>
+      <td style="font-weight:700;text-align:center">${recs.length}</td>
+      <td style="color:var(--dk);font-weight:700;text-align:center">${tu}</td>
+      <td style="color:var(--ok);font-weight:700">₹${Math.round(ta).toLocaleString('en-IN')}</td>
+      <td style="font-size:11px;color:var(--mu)">${last?.savedAt||'—'}</td>`;
+    body.appendChild(tr);
+  });
+  noEl.style.display = hasAny?'none':'block';
+  updateAdminBanner();
+}
+
+function renderAdmChart() {
+  const data=[];
+  CFG.offices.forEach(o => {
+    const recs=getRecs(o.name);
+    const tu=recs.reduce((s,r)=>s+(r.diff||0),0);
+    if(tu>0) data.push({name:o.name,u:tu});
+  });
+  data.sort((a,b)=>b.u-a.u);
+  const top=data.slice(0,10);
+  const mu=Math.max(...top.map(d=>d.u),1);
+  const el=document.getElementById('adm-chart-units');
+  if(!top.length){ el.innerHTML='<div class="nodata"><div class="nodata-ico">📊</div>No data.</div>'; return; }
+  el.innerHTML=top.map(d=>`
+    <div class="gbar"><div class="glbl" title="${d.name}">${d.name.slice(0,14)}</div><div class="gout"><div class="gin" style="width:${Math.round(d.u/mu*100)}%;background:var(--adm2)"></div></div><div class="gval">${d.u}u</div></div>`).join('');
+}
+
+// ============ ALL DATA ============
+function populateAdmOfficeFilter() {
+  const sel=document.getElementById('adm-fil-off');
+  if(!sel) return;
+  sel.innerHTML='<option value="">All Offices</option>';
+  CFG.offices.forEach(o=>{ const op=document.createElement('option'); op.value=o.name; op.textContent=o.name; sel.appendChild(op); });
+}
+function renderAllData() {
+  const srch=(document.getElementById('adm-srch')?.value||'').toLowerCase();
+  const mon=document.getElementById('adm-fil-mon')?.value||'';
+  const offF=document.getElementById('adm-fil-off')?.value||'';
+  const all=getAllRecs().filter(r=>{
+    const hay=[r._office||r.office,r.month,r.landlord,r.paidTo,r.currDate].join(' ').toLowerCase();
+    return (!srch||hay.includes(srch))&&(!mon||r.month===mon)&&(!offF||r._office===offF||r.office===offF);
+  });
+  const body=document.getElementById('all-data-body');
+  const noEl=document.getElementById('all-data-nodata');
+  body.innerHTML='';
+  if(!all.length){ noEl.style.display='block'; return; }
+  noEl.style.display='none';
+  all.sort((a,b)=>b.id-a.id).forEach((r,i)=>{
+    const ph=r.photos?.length?`<img src="${r.photos[0].dataUrl}" class="thumb" onclick="viewPhotos('${r.id}','${r._office||r.office}')" />`:'—';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${i+1}</td>
+      <td style="font-size:11px;font-weight:600;max-width:120px">${r._office||r.office}</td>
+      <td><span class="badge ${(r.month||'').includes('MAY')?'bm':'ba2'}">${r.month}</span></td>
+      <td style="white-space:nowrap">${r.currDate||'—'}</td>
+      <td style="font-weight:700;color:var(--adm)">${r.landlord||'—'}</td>
+      <td>${r.prevReading??'—'}</td>
+      <td style="font-weight:700">${r.currReading}</td>
+      <td style="color:var(--dk);font-weight:700">${r.diff??'—'}</td>
+      <td>₹${r.rate}/u</td>
+      <td style="color:var(--ok);font-weight:700">${r.amount!==null?'₹'+r.amount.toLocaleString('en-IN'):'—'}</td>
+      <td>${ph}</td>
+      <td><button class="bico del" onclick="delRec('${r.id}','${r._office||r.office}')">✕</button></td>`;
+    body.appendChild(tr);
+  });
+}
+
+// ============ OFFICES MANAGEMENT ============
+function renderOfficesList() {
+  const el=document.getElementById('offices-list');
+  el.innerHTML='';
+  CFG.offices.forEach((o,oi) => {
+    const div=document.createElement('div'); div.className='office-row';
+    const typeBadge = `<span class="otype ${o.type.toLowerCase()}">${o.type}</span>`;
+    const recs=getRecs(o.name).length;
+    div.innerHTML=`
+      <div class="office-row-header">
+        <div>
+          <span class="office-name-tag">${o.name}</span> &nbsp;${typeBadge}
+          <span class="office-meta" style="margin-left:8px">${recs} record${recs!==1?'s':''}</span>
+        </div>
+        <button class="btn bd bsm" onclick="removeOffice(${oi})" ${recs>0?'title="Has data — remove with caution"':''}>🗑 Remove Office</button>
+      </div>
+      <div style="margin-bottom:6px">
+        <span style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.4px">Landlords (As Agreement):</span>
+        <div style="margin-top:5px" id="lnds-${oi}"></div>
+      </div>
+      <div class="inline-add">
+        <input type="text" id="lndinp-${oi}" placeholder="Add landlord name (as agreement)" />
+        <button class="btn bs bsm" onclick="addLandlord(${oi})">➕ Add</button>
+      </div>
+    `;
+    el.appendChild(div);
+    renderLandlords(oi);
+  });
+}
+
+function renderLandlords(oi) {
+  const el=document.getElementById('lnds-'+oi);
+  if(!el) return;
+  const o=CFG.offices[oi];
+  if(!o.landlords.length){ el.innerHTML='<span style="font-size:11px;color:var(--mu)">No landlords added yet.</span>'; return; }
+  el.innerHTML=o.landlords.map((l,li)=>`
+    <span class="lnd-chip">${l}<button onclick="removeLandlord(${oi},${li})" title="Remove">✕</button></span>`).join('');
+}
+
+function addOffice() {
+  const name=document.getElementById('new-office-name').value.trim();
+  const type=document.getElementById('new-office-type').value;
+  if(!name){ toast('Enter office name.','er'); return; }
+  if(CFG.offices.find(o=>o.name.toLowerCase()===name.toLowerCase())){ toast('Office already exists.','er'); return; }
+  CFG.offices.push({name, type, landlords:[]});
+  saveCfg(CFG);
+  document.getElementById('new-office-name').value='';
+  renderOfficesList(); populateOfficeSelect(); updateAdminBanner();
+  toast('✅ Office added: '+name,'ok');
+}
+
+function removeOffice(oi) {
+  const o=CFG.offices[oi];
+  const recs=getRecs(o.name).length;
+  const msg = recs>0
+    ? `⚠ "${o.name}" has ${recs} records. Removing office hides it from login but data stays in browser.\n\nProceed?`
+    : `Remove office "${o.name}"?`;
+  if(!confirm(msg)) return;
+  CFG.offices.splice(oi,1);
+  saveCfg(CFG);
+  renderOfficesList(); populateOfficeSelect(); updateAdminBanner();
+  toast('Office removed.','er');
+}
+
+function addLandlord(oi) {
+  const inp=document.getElementById('lndinp-'+oi);
+  const name=inp.value.trim();
+  if(!name){ toast('Enter landlord name.','er'); return; }
+  if(CFG.offices[oi].landlords.includes(name)){ toast('Already exists.','er'); return; }
+  CFG.offices[oi].landlords.push(name);
+  saveCfg(CFG);
+  inp.value='';
+  renderLandlords(oi);
+  toast('✅ Landlord added.','ok');
+}
+
+function removeLandlord(oi, li) {
+  if(!confirm('Remove landlord "'+CFG.offices[oi].landlords[li]+'"?')) return;
+  CFG.offices[oi].landlords.splice(li,1);
+  saveCfg(CFG);
+  renderLandlords(oi);
+  toast('Landlord removed.','er');
+}
+
+// ============ CONFIG ============
+function saveGlobalRate() {
+  const r=parseFloat(document.getElementById('new-global-rate').value);
+  if(!r||r<1||r>50){ toast('Enter valid rate (1–50).','er'); return; }
+  CFG.globalRate=r;
+  saveCfg(CFG);
+  document.getElementById('cur-global-rate').textContent=r;
+  document.getElementById('new-global-rate').value='';
+  toast('✅ Rate updated to ₹'+r+'/unit','ok adm');
+}
+function changeAdmPass() {
+  const p=document.getElementById('new-adm-pass').value.trim();
+  if(p.length<4){ toast('Min 4 characters.','er'); return; }
+  CFG.adminPass=p;
+  saveCfg(CFG);
+  document.getElementById('new-adm-pass').value='';
+  toast('✅ Admin password changed.','ok');
+}
+function changeUsrPass() {
+  const p=document.getElementById('new-usr-pass').value.trim();
+  if(p.length<4){ toast('Min 4 characters.','er'); return; }
+  CFG.officePass=p;
+  saveCfg(CFG);
+  document.getElementById('new-usr-pass').value='';
+  document.getElementById('show-usr-pass').textContent=p;
+  toast('✅ Office password changed to: '+p,'ok');
+}
+function dangerClearAll() {
+  if(!confirm('⚠ This will PERMANENTLY delete ALL records from ALL offices.\n\nThis cannot be undone! Proceed?')) return;
+  CFG.offices.forEach(o => localStorage.removeItem(recKey(o.name)));
+  toast('All data cleared.','er');
+  renderAdmSummary(); renderAdmChart(); renderAllData(); updateAdminBanner();
+}
+
+// ============ EXCEL EXPORT ============
+function exportXL(mode) {
+  let rows=[], filename='';
+  if(mode==='admin') {
+    const all=getAllRecs();
+    if(!all.length){ toast('No data to export.','er'); return; }
+    rows=all.map((r,i)=>({
+      'Sr':i+1,'Office':r._office||r.office,'Month':r.month,'Current Date':r.currDate,
+      'Previous Date':r.prevDate||'','Landlord (Agreement)':r.landlord,
+      'Prev KWH':r.prevReading??'','Curr KWH':r.currReading,
+      'Units Used':r.diff??'','Rate ₹/unit':r.rate,'Amount ₹':r.amount??'',
+      'Paid To':r.paidTo,'Remarks':r.remarks,'Photos':r.photos?.length||0,'Saved At':r.savedAt
+    }));
+    filename=`DvVNL_ALL_Offices_${new Date().toISOString().slice(0,10)}.xlsx`;
+  } else {
+    const recs=getRecs(curOffice);
+    if(!recs.length){ toast('No records to export.','er'); return; }
+    rows=recs.map((r,i)=>({
+      'Sr':i+1,'Office':r.office,'Month':r.month,'Current Date':r.currDate,
+      'Previous Date':r.prevDate||'','Landlord (Agreement)':r.landlord,
+      'Prev KWH':r.prevReading??'','Curr KWH':r.currReading,
+      'Units Used':r.diff??'','Rate ₹/unit':r.rate,'Amount ₹':r.amount??'',
+      'Paid To':r.paidTo,'Remarks':r.remarks,'Photos':r.photos?.length||0,'Saved At':r.savedAt
+    }));
+    filename=`DvVNL_${curOffice.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.xlsx`;
+  }
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=Object.keys(rows[0]).map(()=>({wch:20}));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Electricity Data');
+  XLSX.writeFile(wb,filename);
+  toast('✅ Excel exported: '+filename,'ok');
+}
+
+// ============ GOOGLE SHEETS SYNC ============
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzqaHKVSecUl6d_4Dp7nvupbRBNi1nUy2-er5wS8mJ2Kvouo7HPAwgBQQxcf3BsngSj/exec';
+
+function syncToSheet(rec) {
+  const payload = {
+    office: rec.office,
+    month: rec.month,
+    currDate: rec.currDate,
+    prevDate: rec.prevDate || '',
+    landlord: rec.landlord,
+    prevReading: rec.prevReading ?? '',
+    currReading: rec.currReading,
+    diff: rec.diff ?? '',
+    rate: rec.rate,
+    amount: rec.amount ?? '',
+    paidTo: rec.paidTo || '',
+    remarks: rec.remarks || '',
+    photosCount: rec.photos ? rec.photos.length : 0,
+    savedAt: rec.savedAt
+  };
+
+  // Show syncing indicator
+  toast('📤 Syncing to Google Sheet...', '');
+
+  fetch(SHEET_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(() => {
+    toast('✅ Synced to Google Sheet!', 'ok');
+    // Mark as synced in localStorage
+    const recs = getRecs(rec.office);
+    const idx = recs.findIndex(r => r.id === rec.id);
+    if (idx !== -1) { recs[idx].synced = true; setRecs(rec.office, recs); }
+    renderRecs();
+  })
+  .catch(err => {
+    toast('⚠ Sheet sync failed — data saved locally.', 'er');
+    console.error('Sheet sync error:', err);
+  });
+}
+
+// Retry unsynced records
+function retrySyncAll() {
+  const recs = getRecs(curOffice).filter(r => !r.synced);
+  if (!recs.length) { toast('All records already synced ✅', 'ok'); return; }
+  recs.forEach((r, i) => setTimeout(() => syncToSheet(r), i * 1500));
+  toast(`Retrying sync for ${recs.length} record(s)...`, '');
+}
+
+// ============ INIT ============
+populateOfficeSelect();
+document.getElementById('f-cdate').value = new Date().toISOString().split('T')[0];
+</script>
+</body>
+</html>
