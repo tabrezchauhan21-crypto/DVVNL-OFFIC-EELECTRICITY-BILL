@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DvVNL Electricity Tracker — Sai Computers</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
 :root{
@@ -135,6 +136,32 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
 .pplab{position:absolute;bottom:0;left:0;right:0;background:rgba(31,78,121,.85);color:#fff;font-size:10px;font-weight:700;padding:3px 7px;text-align:center}
 .pprm{position:absolute;top:5px;right:5px;background:rgba(192,57,43,.9);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 
+/* CAMERA & OCR */
+.cam-btn-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.cam-btn{flex:1;min-width:120px;height:44px;border-radius:9px;border:none;font-family:"DM Sans",sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .2s}
+.cam-btn.gallery{background:#EEF5FC;color:var(--dk);border:1.5px solid var(--lt)}
+.cam-btn.gallery:hover{background:var(--lt)}
+.cam-btn.camera{background:var(--dk);color:#fff}
+.cam-btn.camera:hover{background:var(--md)}
+.cam-btn.ocr-btn{background:linear-gradient(135deg,#F0A500,#FFD166);color:var(--dk)}
+.cam-btn.ocr-btn:hover{opacity:.9}
+.cam-btn:disabled{opacity:.5;cursor:not-allowed}
+.ocr-result-box{background:#F0FFF8;border:1.5px solid #9FD4B3;border-radius:9px;padding:12px 14px;margin-top:10px;display:none}
+.ocr-result-box .ocr-label{font-size:10px;font-weight:700;color:var(--ok);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.ocr-reading-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ocr-reading-val{font-family:"Rajdhani",sans-serif;font-size:28px;font-weight:700;color:var(--dk)}
+.ocr-use-btn{background:var(--ok);color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:"DM Sans",sans-serif}
+.ocr-use-btn:hover{opacity:.9}
+.ocr-raw{font-size:10px;color:var(--mu);margin-top:4px;font-family:"DM Mono",monospace;word-break:break-all}
+.ocr-progress{background:#EEF5FC;border:1px solid var(--lt);border-radius:8px;padding:10px 14px;margin-top:8px;display:none;align-items:center;gap:10px}
+.ocr-progress .spin{width:18px;height:18px;border:2px solid var(--lt);border-top-color:var(--dk);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ocr-progress .prog-text{font-size:12px;color:var(--dk);font-weight:500}
+.cam-video-wrap{display:none;position:relative;border-radius:10px;overflow:hidden;background:#000;margin-bottom:10px}
+.cam-video-wrap video{width:100%;max-height:260px;display:block;object-fit:cover}
+.cam-capture-btn{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:#fff;color:var(--dk);border:none;border-radius:50px;padding:10px 24px;font-size:13px;font-weight:700;cursor:pointer;font-family:"DM Sans",sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.3);display:flex;align-items:center;gap:7px}
+.cam-capture-btn:hover{background:var(--ac)}
+.cam-stop-btn{position:absolute;top:8px;right:8px;background:rgba(192,57,43,.85);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-weight:700}
 /* MODAL */
 .mback{position:fixed;inset:0;background:rgba(0,0,0,.76);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px}
 .mback.on{display:flex}
@@ -321,13 +348,54 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
         <hr class="divider" />
         <div class="fgrid">
           <div class="fg full">
-            <label>Upload Meter Photo(s) <span class="req">*</span></label>
-            <div class="pzone" id="pzone">
-              <input type="file" accept="image/*" multiple id="photo-inp" onchange="handlePhotos(this)" />
-              <div style="font-size:32px;margin-bottom:6px">📷</div>
-              <div style="font-size:13px;font-weight:600;color:var(--dk)">Click or drag to upload meter photos</div>
-              <div style="font-size:11px;color:var(--mu);margin-top:3px">JPG, PNG — Max 5MB each · Multiple photos allowed</div>
+            <label>Meter Photo <span class="req">*</span> &nbsp;<span style="font-size:10px;color:var(--mu);font-weight:400">Upload / Camera + OCR auto-read</span></label>
+
+            <!-- BUTTON ROW -->
+            <div class="cam-btn-row">
+              <button type="button" class="cam-btn gallery" onclick="document.getElementById('photo-inp').click()">
+                🖼 Gallery / File
+              </button>
+              <button type="button" class="cam-btn camera" id="cam-open-btn" onclick="openCamera()">
+                📷 Camera (Live)
+              </button>
+              <button type="button" class="cam-btn ocr-btn" id="ocr-btn" onclick="runOCR()" disabled>
+                🔍 Read Meter (OCR)
+              </button>
             </div>
+
+            <!-- HIDDEN FILE INPUT -->
+            <input type="file" accept="image/*" multiple id="photo-inp" style="display:none" onchange="handlePhotos(this)" />
+
+            <!-- LIVE CAMERA VIEW -->
+            <div class="cam-video-wrap" id="cam-video-wrap">
+              <video id="cam-video" autoplay playsinline muted></video>
+              <button class="cam-capture-btn" onclick="capturePhoto()">📸 Capture Meter</button>
+              <button class="cam-stop-btn" onclick="stopCamera()">✕ Stop</button>
+            </div>
+
+            <!-- DRAG DROP ZONE (fallback) -->
+            <div class="pzone" id="pzone" style="margin-top:0" onclick="document.getElementById('photo-inp').click()">
+              <div style="font-size:26px;margin-bottom:4px">🖼</div>
+              <div style="font-size:12px;font-weight:600;color:var(--dk)">Or drag &amp; drop photos here</div>
+              <div style="font-size:10px;color:var(--mu);margin-top:2px">JPG, PNG — Max 5MB each</div>
+            </div>
+
+            <!-- OCR PROGRESS -->
+            <div class="ocr-progress" id="ocr-progress">
+              <div class="spin"></div>
+              <div class="prog-text" id="ocr-prog-text">Initializing OCR...</div>
+            </div>
+
+            <!-- OCR RESULT -->
+            <div class="ocr-result-box" id="ocr-result-box">
+              <div class="ocr-label">🔍 OCR Detected Reading</div>
+              <div class="ocr-reading-row">
+                <div class="ocr-reading-val" id="ocr-reading-val">—</div>
+                <button class="ocr-use-btn" onclick="useOCRReading()">✅ Use This Reading</button>
+              </div>
+              <div class="ocr-raw" id="ocr-raw-text"></div>
+            </div>
+
             <div class="ppgrid" id="pp-grid"></div>
           </div>
           <div class="fg full">
@@ -821,7 +889,12 @@ function handlePhotos(inp) {
   Array.from(inp.files).forEach(f => {
     if (f.size > 5*1024*1024) { toast('Photo too large: '+f.name,'er'); return; }
     const r = new FileReader();
-    r.onload = e => { photos.push({name:f.name, dataUrl:e.target.result}); renderPP(); };
+    r.onload = e => {
+      photos.push({name:f.name, dataUrl:e.target.result});
+      lastCapturedForOCR = e.target.result;
+      renderPP();
+      document.getElementById('ocr-btn').disabled = false;
+    };
     r.readAsDataURL(f);
   });
 }
@@ -940,7 +1013,7 @@ function renderRecs() {
   if(!filtered.length) { noEl.style.display='block'; return; }
   noEl.style.display='none';
   filtered.forEach((r,i) => {
-    const ph = r.photos?.length ? `<img src="${r.photos[0].dataUrl}" class="thumb" onclick="viewPhotos('${r.id}','${curOffice}')" />` : '—';
+    const ph = r.photos?.length ? `<img src="${r.photos[0].dataUrl}" class="thumb" onclick="viewPhotos('${r.id}','${curOffice}')" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2232%22 height=%2232%22><rect width=%2232%22 height=%2232%22 fill=%22%23EEF5FC%22 rx=%224%22/><text x=%2250%25%22 y=%2255%25%22 font-size=%2214%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22>🔗</text></svg>';this.title='SharePoint photo - click to open'" />` : '—';
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${i+1}</td>
@@ -976,8 +1049,39 @@ function viewPhotos(id, office) {
   const mc = document.getElementById('modal-content');
   mc.innerHTML='';
   rec.photos.forEach((p,i) => {
-    const d = document.createElement('div'); d.style.marginBottom='10px';
-    d.innerHTML=`<div style="font-size:11px;color:var(--mu);margin-bottom:3px">Photo ${i+1}: ${p.name}</div><img src="${p.dataUrl}" style="width:100%;border-radius:7px;max-height:280px;object-fit:contain;background:#000;display:block" />`;
+    const d = document.createElement('div'); d.style.marginBottom='12px';
+    const label = p.label || ('Photo ' + (i+1));
+    const isPDF = p.dataUrl && p.dataUrl.toLowerCase().includes('.pdf');
+    const isLink = p.isLink;
+    
+    if (isLink && isPDF) {
+      // PDF link — show open button
+      d.innerHTML=`
+        <div style="font-size:11px;color:var(--mu);margin-bottom:4px">${label}: ${p.name}</div>
+        <div style="background:#F8F5FF;border:1px solid #D0C8F0;border-radius:8px;padding:14px;text-align:center">
+          <div style="font-size:28px;margin-bottom:6px">📄</div>
+          <div style="font-size:12px;color:var(--adm);font-weight:600;margin-bottom:8px">PDF Document</div>
+          <a href="${p.dataUrl}" target="_blank" style="background:var(--adm);color:#fff;text-decoration:none;padding:7px 16px;border-radius:7px;font-size:12px;font-weight:600">🔗 Open in SharePoint</a>
+        </div>`;
+    } else if (isLink) {
+      // SharePoint image link — show img with fallback
+      d.innerHTML=`
+        <div style="font-size:11px;color:var(--mu);margin-bottom:4px">${label}: ${p.name}</div>
+        <div style="position:relative">
+          <img src="${p.dataUrl}" 
+            style="width:100%;border-radius:7px;max-height:280px;object-fit:contain;background:#111;display:block"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='block'" />
+          <div style="display:none;background:#EEF5FC;border:1px solid var(--lt);border-radius:8px;padding:14px;text-align:center">
+            <div style="font-size:24px;margin-bottom:6px">🔒</div>
+            <div style="font-size:12px;color:var(--dk);font-weight:600;margin-bottom:6px">SharePoint Login Required</div>
+            <a href="${p.dataUrl}" target="_blank" style="background:var(--dk);color:#fff;text-decoration:none;padding:6px 14px;border-radius:7px;font-size:12px;font-weight:600">🔗 Open in SharePoint</a>
+          </div>
+        </div>`;
+    } else {
+      d.innerHTML=`
+        <div style="font-size:11px;color:var(--mu);margin-bottom:3px">${label}: ${p.name}</div>
+        <img src="${p.dataUrl}" style="width:100%;border-radius:7px;max-height:280px;object-fit:contain;background:#000;display:block" />`;
+    }
     mc.appendChild(d);
   });
   document.getElementById('modal-title').textContent = `${rec.office||office} — ${rec.month} (${rec.photos.length} photo${rec.photos.length>1?'s':''})`;
@@ -1100,7 +1204,7 @@ function renderAllData() {
   if(!all.length){ noEl.style.display='block'; return; }
   noEl.style.display='none';
   all.sort((a,b)=>b.id-a.id).forEach((r,i)=>{
-    const ph=r.photos?.length?`<img src="${r.photos[0].dataUrl}" class="thumb" onclick="viewPhotos('${r.id}','${r._office||r.office}')" />`:'—';
+    const ph=r.photos?.length?`<img src="${r.photos[0].dataUrl}" class="thumb" onclick="viewPhotos('${r.id}','${r._office||r.office}')" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2232%22 height=%2232%22><rect width=%2232%22 height=%2232%22 fill=%22%23EEF5FC%22 rx=%224%22/><text x=%2250%25%22 y=%2255%25%22 font-size=%2214%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22>🔗</text></svg>';this.title='SharePoint'" />`:'—';
     const tr=document.createElement('tr');
     tr.innerHTML=`
       <td>${i+1}</td>
@@ -1271,6 +1375,157 @@ function exportXL(mode) {
   toast('✅ Excel exported: '+filename,'ok');
 }
 
+// ============ CAMERA ============
+let cameraStream = null;
+let lastCapturedForOCR = null;
+
+async function openCamera() {
+  const wrap = document.getElementById('cam-video-wrap');
+  const video = document.getElementById('cam-video');
+  const btn = document.getElementById('cam-open-btn');
+
+  try {
+    // rear camera preferred for meter reading
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false
+    });
+    video.srcObject = cameraStream;
+    wrap.style.display = 'block';
+    btn.textContent = '🟢 Camera ON';
+    btn.disabled = true;
+  } catch(err) {
+    // fallback: open file picker with camera
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = 'image/*';
+    inp.capture = 'environment';
+    inp.onchange = e => handlePhotos(e.target);
+    inp.click();
+    toast('Camera access denied — opening file picker.', '');
+  }
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  document.getElementById('cam-video-wrap').style.display = 'none';
+  const btn = document.getElementById('cam-open-btn');
+  btn.textContent = '📷 Camera (Live)';
+  btn.disabled = false;
+}
+
+function capturePhoto() {
+  const video = document.getElementById('cam-video');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0);
+
+  canvas.toBlob(blob => {
+    const fileName = 'meter_capture_' + Date.now() + '.jpg';
+    const file = new File([blob], fileName, { type: 'image/jpeg' });
+    const reader = new FileReader();
+    reader.onload = e => {
+      photos.push({ name: fileName, dataUrl: e.target.result });
+      lastCapturedForOCR = e.target.result;
+      renderPP();
+      // Enable OCR button
+      document.getElementById('ocr-btn').disabled = false;
+      toast('📸 Photo captured! Click "Read Meter (OCR)" to auto-read.', 'ok');
+      stopCamera();
+    };
+    reader.readAsDataURL(file);
+  }, 'image/jpeg', 0.92);
+}
+
+// ============ OCR ============
+let ocrDetectedNumber = null;
+
+async function runOCR() {
+  // Use last captured or last uploaded photo
+  const targetImg = lastCapturedForOCR || (photos.length ? photos[photos.length-1].dataUrl : null);
+  if (!targetImg) { toast('No photo to scan. Capture or upload first.', 'er'); return; }
+
+  const progEl = document.getElementById('ocr-progress');
+  const progText = document.getElementById('ocr-prog-text');
+  const resultBox = document.getElementById('ocr-result-box');
+  const ocrBtn = document.getElementById('ocr-btn');
+
+  progEl.style.display = 'flex';
+  resultBox.style.display = 'none';
+  ocrBtn.disabled = true;
+  ocrBtn.textContent = '⏳ Reading...';
+
+  try {
+    progText.textContent = 'Loading OCR engine...';
+
+    const worker = await Tesseract.createWorker('eng', 1, {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          progText.textContent = 'Reading meter... ' + Math.round((m.progress||0)*100) + '%';
+        }
+      }
+    });
+
+    // Set params optimized for meter digits
+    await worker.setParameters({
+      tessedit_char_whitelist: '0123456789.',
+      tessedit_pageseg_mode: '6',
+    });
+
+    progText.textContent = 'Analyzing meter digits...';
+    const result = await worker.recognize(targetImg);
+    await worker.terminate();
+
+    const rawText = result.data.text.trim();
+    console.log('OCR raw:', rawText);
+
+    // Extract numbers from OCR text
+    const numbers = rawText.match(/\d+\.?\d*/g);
+    const filtered = numbers ? numbers.filter(n => {
+      const v = parseFloat(n);
+      return v > 100 && v < 999999; // typical KWH meter range
+    }) : [];
+
+    progEl.style.display = 'none';
+    ocrBtn.disabled = false;
+    ocrBtn.textContent = '🔍 Read Meter (OCR)';
+
+    if (filtered.length > 0) {
+      // Pick the largest plausible number (meter reading)
+      ocrDetectedNumber = filtered.sort((a,b) => parseFloat(b)-parseFloat(a))[0];
+      document.getElementById('ocr-reading-val').textContent = ocrDetectedNumber;
+      document.getElementById('ocr-raw-text').textContent = 'Raw OCR: "' + rawText.replace(/\n/g,' ').slice(0,120) + '"';
+      resultBox.style.display = 'block';
+      toast('✅ Meter reading detected: ' + ocrDetectedNumber, 'ok');
+    } else {
+      document.getElementById('ocr-reading-val').textContent = '? Not detected';
+      document.getElementById('ocr-raw-text').textContent = 'Raw OCR: "' + rawText.replace(/\n/g,' ').slice(0,120) + '" — try a clearer photo.';
+      ocrDetectedNumber = null;
+      resultBox.style.display = 'block';
+      toast('⚠ Could not read meter clearly. Enter manually.', '');
+    }
+  } catch(err) {
+    progEl.style.display = 'none';
+    ocrBtn.disabled = false;
+    ocrBtn.textContent = '🔍 Read Meter (OCR)';
+    toast('OCR error: ' + err.message, 'er');
+    console.error('OCR error:', err);
+  }
+}
+
+function useOCRReading() {
+  if (!ocrDetectedNumber) return;
+  document.getElementById('f-curr').value = parseFloat(ocrDetectedNumber);
+  calcDiff();
+  document.getElementById('ocr-result-box').style.display = 'none';
+  toast('✅ Reading ' + ocrDetectedNumber + ' KWH applied!', 'ok');
+}
+
 // ============ GOOGLE SHEETS SYNC ============
 const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzqaHKVSecUl6d_4Dp7nvupbRBNi1nUy2-er5wS8mJ2Kvouo7HPAwgBQQxcf3BsngSj/exec';
 
@@ -1323,7 +1578,637 @@ function retrySyncAll() {
   toast(`Retrying sync for ${recs.length} record(s)...`, '');
 }
 
+
+// ============ SEED APRIL DATA ============
+function seedAprilData() {
+  const APRIL_DATA = {
+  "AGRA GUEST HOUSE_MRI": [
+    {
+      "id": 1700000000000,
+      "savedAt": "19-04-2026, 12:00:00",
+      "office": "AGRA GUEST HOUSE_MRI",
+      "month": "APR-2026",
+      "currDate": "2026-04-19",
+      "currReading": 15376,
+      "prevReading": 15098,
+      "prevDate": "2026-03-19",
+      "rate": 8,
+      "diff": 278,
+      "amount": 2224,
+      "landlord": "ANKUR",
+      "paidTo": "PAID BY TAMREZ ALAM",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "AGRA OFFICE_MRI": [
+    {
+      "id": 1700000000001,
+      "savedAt": "19-04-2026, 12:00:00",
+      "office": "AGRA OFFICE_MRI",
+      "month": "APR-2026",
+      "currDate": "2026-04-19",
+      "currReading": 17151,
+      "prevReading": 16510,
+      "prevDate": "2026-03-19",
+      "rate": 8,
+      "diff": 641,
+      "amount": 5128,
+      "landlord": "SANDEEP",
+      "paidTo": "PAID BY TAMREZ ALAM",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "Auriyya (Kanpur)_MRI": [
+    {
+      "id": 1700000000002,
+      "savedAt": "19-04-2026, 12:00:00",
+      "office": "Auriyya (Kanpur)_MRI",
+      "month": "APR-2026",
+      "currDate": "2026-04-19",
+      "currReading": 4240,
+      "prevReading": 4112,
+      "prevDate": "2026-03-20",
+      "rate": 8,
+      "diff": 128,
+      "amount": 1024,
+      "landlord": "RAJEEV SHUKLA",
+      "paidTo": "Landlord (Sub Meter)",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "CHIBRAMAU_MRI": [
+    {
+      "id": 1700000000003,
+      "savedAt": "18-04-2026, 12:00:00",
+      "office": "CHIBRAMAU_MRI",
+      "month": "APR-2026",
+      "currDate": "2026-04-18",
+      "currReading": 2366,
+      "prevReading": 2344,
+      "prevDate": "2026-03-20",
+      "rate": 8,
+      "diff": 22,
+      "amount": 176,
+      "landlord": "SONI",
+      "paidTo": "Landlord (Sub Meter)",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "Chitrakoot_MRI": [
+    {
+      "id": 1700000000004,
+      "savedAt": "18-04-2026, 12:00:00",
+      "office": "Chitrakoot_MRI",
+      "month": "APR-2026",
+      "currDate": "2026-04-18",
+      "currReading": 1155,
+      "prevReading": 1115,
+      "prevDate": "2026-03-20",
+      "rate": 7,
+      "diff": 40,
+      "amount": 280,
+      "landlord": "SUDHA KUSHWAHA",
+      "paidTo": "Landlord (Sub Meter)",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "ETAH_MRI": [
+    {
+      "id": 1700000000005,
+      "savedAt": "18-04-2026, 12:00:00",
+      "office": "ETAH_MRI",
+      "month": "APR-2026",
+      "currDate": "2026-04-18",
+      "currReading": 11283,
+      "prevReading": 11186,
+      "prevDate": "2026-03-23",
+      "rate": 10,
+      "diff": 97,
+      "amount": 970,
+      "landlord": "ALKSHWNDRA YADAV",
+      "paidTo": "Landlord (Sub Meter)",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "ETWAH_MRI": [
+    {
+      "id": 1700000000006,
+      "savedAt": "18-04-2026, 12:00:00",
+      "office": "ETWAH_MRI",
+      "month": "APR-2026",
+      "currDate": "2026-04-18",
+      "currReading": 4452,
+      "prevReading": 4346,
+      "prevDate": "2026-03-20",
+      "rate": 7,
+      "diff": 106,
+      "amount": 742,
+      "landlord": "MANJU LATA DRIWEDI",
+      "paidTo": "Landlord (Sub Meter)",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "FARUKKABAD_MRI": [
+    {
+      "id": 1700000000007,
+      "savedAt": "18-04-2026, 12:00:00",
+      "office": "FARUKKABAD_MRI",
+      "month": "APR-2026",
+      "currDate": "2026-04-18",
+      "currReading": 1332,
+      "prevReading": 1190,
+      "prevDate": "2026-03-20",
+      "rate": 8,
+      "diff": 142,
+      "amount": 1136,
+      "landlord": "VITOLI DEVI",
+      "paidTo": "Landlord (Sub Meter)",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "FIROZABAD_MRI": [
+    {
+      "id": 1700000000008,
+      "savedAt": "18-04-2026, 12:00:00",
+      "office": "FIROZABAD_MRI",
+      "month": "APR-2026",
+      "currDate": "2026-04-18",
+      "currReading": 6847,
+      "prevReading": 6780,
+      "prevDate": "2026-03-20",
+      "rate": 6,
+      "diff": 67,
+      "amount": 402,
+      "landlord": "RAKESH SINGH RAJAWAT",
+      "paidTo": "Landlord (Sub Meter)",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "HAMIRPUR_MRI": [
+    {
+      "id": 1700000000009,
+      "savedAt": "18-04-2026, 12:00:00",
+      "office": "HAMIRPUR_MRI",
+      "month": "APR-2026",
+      "currDate": "2026-04-18",
+      "currReading": 2026,
+      "prevReading": 2010,
+      "prevDate": "2026-03-23",
+      "rate": 7,
+      "diff": 16,
+      "amount": 112,
+      "landlord": "DINESH KUSHWAHA",
+      "paidTo": "Landlord (Sub Meter)",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "HATHRAS_MRI": [
+    {
+      "id": 1700000000010,
+      "savedAt": "18-04-2026, 12:00:00",
+      "office": "HATHRAS_MRI",
+      "month": "APR-2026",
+      "currDate": "2026-04-18",
+      "currReading": 120,
+      "prevReading": 0,
+      "prevDate": "2026-03-23",
+      "rate": 8,
+      "diff": 120,
+      "amount": 960,
+      "landlord": "BEENA",
+      "paidTo": "Landlord (Sub Meter)",
+      "remarks": "120 UNIT FIX FOR MONTH",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "JHANSI_MRI": [
+    {
+      "id": 1700000000011,
+      "savedAt": "18-04-2026, 12:00:00",
+      "office": "JHANSI_MRI",
+      "month": "APR-2026",
+      "currDate": "2026-04-18",
+      "currReading": 8823,
+      "prevReading": 8698,
+      "prevDate": "2026-03-19",
+      "rate": 8,
+      "diff": 125,
+      "amount": 1000,
+      "landlord": "SURENDRA SINGH WADHWA",
+      "paidTo": "Landlord (Sub Meter)",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "KANNUJ_MRI": [
+    {
+      "id": 1700000000012,
+      "savedAt": "18-04-2026, 12:00:00",
+      "office": "KANNUJ_MRI",
+      "month": "APR-2026",
+      "currDate": "2026-04-18",
+      "currReading": 3421,
+      "prevReading": 3334,
+      "prevDate": "2026-03-20",
+      "rate": 8,
+      "diff": 87,
+      "amount": 696,
+      "landlord": "RAVINDRA KUMAR SHUKLA",
+      "paidTo": "Landlord (Sub Meter)",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "KANPUR_MRI": [
+    {
+      "id": 1700000000013,
+      "savedAt": "18-04-2026, 12:00:00",
+      "office": "KANPUR_MRI",
+      "month": "APR-2026",
+      "currDate": "2026-04-18",
+      "currReading": 785,
+      "prevReading": 663,
+      "prevDate": "2026-03-20",
+      "rate": 9,
+      "diff": 122,
+      "amount": 1098,
+      "landlord": "MAHESHWARI TOMAR",
+      "paidTo": "Landlord (Sub Meter)",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "MAHOBA_MRI": [
+    {
+      "id": 1700000000014,
+      "savedAt": "18-04-2026, 12:00:00",
+      "office": "MAHOBA_MRI",
+      "month": "APR-2026",
+      "currDate": "2026-04-18",
+      "currReading": 3860,
+      "prevReading": 3730,
+      "prevDate": "2026-03-19",
+      "rate": 7,
+      "diff": 130,
+      "amount": 910,
+      "landlord": "KAMLESH",
+      "paidTo": "Landlord (Sub Meter)",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "MAINPURI_MRI": [
+    {
+      "id": 1700000000015,
+      "savedAt": "18-04-2026, 12:00:00",
+      "office": "MAINPURI_MRI",
+      "month": "APR-2026",
+      "currDate": "2026-04-18",
+      "currReading": 8693,
+      "prevReading": 8634,
+      "prevDate": "2026-03-25",
+      "rate": 8,
+      "diff": 59,
+      "amount": 472,
+      "landlord": "SUBHAS CHANDRA",
+      "paidTo": "Landlord (Sub Meter)",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "MATHURA_MRI": [
+    {
+      "id": 1700000000016,
+      "savedAt": "18-04-2026, 12:00:00",
+      "office": "MATHURA_MRI",
+      "month": "APR-2026",
+      "currDate": "2026-04-18",
+      "currReading": 2413,
+      "prevReading": 2006,
+      "prevDate": "2026-03-16",
+      "rate": 8,
+      "diff": 407,
+      "amount": 3256,
+      "landlord": "Rajani",
+      "paidTo": "Landlord (Sub Meter)",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "ORAI (Jhansi)_MRI": [
+    {
+      "id": 1700000000017,
+      "savedAt": "18-04-2026, 12:00:00",
+      "office": "ORAI (Jhansi)_MRI",
+      "month": "APR-2026",
+      "currDate": "2026-04-18",
+      "currReading": 5017,
+      "prevReading": 4959,
+      "prevDate": "2026-03-19",
+      "rate": 8,
+      "diff": 58,
+      "amount": 464,
+      "landlord": "ASHISH GUPTA",
+      "paidTo": "Landlord (Sub Meter)",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "RANIYA (KANPUR DEHAT)_MRI": [
+    {
+      "id": 1700000000018,
+      "savedAt": "18-04-2026, 12:00:00",
+      "office": "RANIYA (KANPUR DEHAT)_MRI",
+      "month": "APR-2026",
+      "currDate": "2026-04-18",
+      "currReading": 690,
+      "prevReading": 639,
+      "prevDate": "2026-03-20",
+      "rate": 7,
+      "diff": 51,
+      "amount": 357,
+      "landlord": "TILAK RAJ GUPTA",
+      "paidTo": "Landlord (Sub Meter)",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "ALIGARH_BILLING": [
+    {
+      "id": 1700000000019,
+      "savedAt": "18-04-2026, 12:00:00",
+      "office": "ALIGARH_BILLING",
+      "month": "APR-2026",
+      "currDate": "2026-04-18",
+      "currReading": 1017,
+      "prevReading": 960,
+      "prevDate": "2026-03-20",
+      "rate": 9,
+      "diff": 57,
+      "amount": 513,
+      "landlord": "SUNITA DEVI",
+      "paidTo": "Landlord (Sub Meter)",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "ETAH_BILLING": [
+    {
+      "id": 1700000000020,
+      "savedAt": "21-04-2026, 12:00:00",
+      "office": "ETAH_BILLING",
+      "month": "APR-2026",
+      "currDate": "2026-04-21",
+      "currReading": 780,
+      "prevReading": 725,
+      "prevDate": "2026-03-25",
+      "rate": 7,
+      "diff": 55,
+      "amount": 385,
+      "landlord": "Prabhakar gupta",
+      "paidTo": "Landlord (Sub Meter)",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "KASHGANJ_BILLING": [
+    {
+      "id": 1700000000021,
+      "savedAt": "25-04-2026, 12:00:00",
+      "office": "KASHGANJ_BILLING",
+      "month": "APR-2026",
+      "currDate": "2026-04-25",
+      "currReading": 5827,
+      "prevReading": 5810,
+      "prevDate": "2026-03-21",
+      "rate": 7,
+      "diff": 17,
+      "amount": 119,
+      "landlord": "Shishupal Singh",
+      "paidTo": "Landlord (Sub Meter)",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ],
+  "HATHRAS_BILLING": [
+    {
+      "id": 1700000000022,
+      "savedAt": "18-04-2026, 12:00:00",
+      "office": "HATHRAS_BILLING",
+      "month": "APR-2026",
+      "currDate": "2026-04-18",
+      "currReading": 2788,
+      "prevReading": 2698,
+      "prevDate": "2026-03-18",
+      "rate": 7,
+      "diff": 90,
+      "amount": 630,
+      "landlord": "omwati bhartdwaj",
+      "paidTo": "Landlord (Sub Meter)",
+      "remarks": "",
+      "photos": [],
+      "synced": true,
+      "seeded": true
+    }
+  ]
+};
+  Object.entries(APRIL_DATA).forEach(([office, recs]) => {
+    const existing = getRecs(office);
+    const hasApril = existing.some(r => r.month === 'APR-2026');
+    if (!hasApril) {
+      const merged = [...existing, ...recs];
+      localStorage.setItem(recKey(office), JSON.stringify(merged));
+    }
+  });
+}
+
+
+// ============ INJECT APRIL SHAREPOINT PHOTOS ============
+function injectAprilPhotos() {
+  const PHOTO_MAP = {
+  "AGRA GUEST HOUSE_MRI": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/F2%20APR%202026_Dvvnl%20Mri.jpeg",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/F2%20MARCH%202026_Dvvnl%20Mri.jpeg"
+  },
+  "AGRA OFFICE_MRI": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/S3%20APR%202026_Dvvnl%20Mri.jpeg",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/S3%20MARCH%202026_Dvvnl%20Mri.jpeg"
+  },
+  "Auriyya (Kanpur)_MRI": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/CR%20AURAIYA_Kanpur%20Mri.jpeg",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/PR%20AURAIYA_Kanpur%20Mri.jpeg"
+  },
+  "CHIBRAMAU_MRI": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/CR%20CHIBRAMAU_Kanpur%20Mri.jpeg",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/PR%20CHIBRAMAU_Kanpur%20Mri.jpeg"
+  },
+  "Chitrakoot_MRI": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/cf1e0383-64ab-4bd9-9253-405b01907333_Banda%20Mri.jpg",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/eb95102a-e689-4a1c-a5a4-079b66e62fea_Banda%20Mri.jpg"
+  },
+  "ETAH_MRI": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/old_Praveen%20Kumar.jpeg",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/oldddddddddd_Praveen%20Kumar.jpeg"
+  },
+  "ETWAH_MRI": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/CR%20ETAWAH_Kanpur%20Mri.jpeg",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/PR%20EATWAH_Kanpur%20Mri.jpeg"
+  },
+  "FARUKKABAD_MRI": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/cr%20frk_Kanpur%20Mri.jpeg",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/pr%20frk_Kanpur%20Mri.jpeg"
+  },
+  "FIROZABAD_MRI": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/WhatsApp%20Image%202026-04-18%20at%2011.52.51%20AM_Agra%20Mri.jpeg",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/WhatsApp%20Image%202026-03-20%20at%2012.19.45%20PM_Agra%20Mri.jpeg"
+  },
+  "HAMIRPUR_MRI": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/WhatsApp%20Image%202026-04-18%20at%2012.22.04%20PM_Banda%20Mri.jpeg",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/WhatsApp%20Image%202026-03-23%20at%208.01.29%20AM_Banda%20Mri.jpeg"
+  },
+  "HATHRAS_MRI": {
+    "curr_url": null,
+    "prev_url": null
+  },
+  "JHANSI_MRI": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/WhatsApp%20Image%202026-04-18%20at%2011.27.49%20AM_Asik%20Yadav.jpeg",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/WhatsApp%20Image%202026-04-18%20at%2011.28.04%20AM_Asik%20Yadav.jpeg"
+  },
+  "KANNUJ_MRI": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/CR%20KANNAUJ._Kanpur%20Mri.jpeg",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/PR%20KANNAUJ._Kanpur%20Mri.jpeg"
+  },
+  "KANPUR_MRI": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/CR%20KANPUR_Kanpur%20Mri%201.jpeg",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/PR%20KANPUR_Kanpur%20Mri.jpeg"
+  },
+  "MAHOBA_MRI": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/18%20APRIL%202026_Banda%20Mri%201.jpeg",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/19%20MARCH%202026_Banda%20Mri%201.jpeg"
+  },
+  "MAINPURI_MRI": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/18%20APRIL%202026_Agra%20Mri.jpeg",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/25%20MARCH%202026_Agra%20Mri.jpeg"
+  },
+  "MATHURA_MRI": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/IMG20260418130342_Mathura%20Mri.jpg",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/IMG20260315200903_Mathura%20Mri.jpg"
+  },
+  "ORAI (Jhansi)_MRI": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/WhatsApp%20Image%202026-04-18%20at%2012.11.39%20PM_Asik%20Yadav.jpeg",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/WhatsApp%20Image%202026-04-18%20at%2012.14.30%20PM_Asik%20Yadav.jpeg"
+  },
+  "RANIYA (KANPUR DEHAT)_MRI": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/CR%20DEHAT_Kanpur%20Mri.jpeg",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/PR%20DEHAT_Kanpur%20Mri.jpeg"
+  },
+  "ALIGARH_BILLING": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/Meter%20Reading%20April-2026%20Aligarh%20Office_Mr.%20Arun%20Kumar.pdf",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/Meter%20Reading%20March-2026%20Aligarh%20Office_Mr.%20Arun%20Kumar.pdf"
+  },
+  "ETAH_BILLING": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/17767545521498805673796251433665_Beenesh%20Kumar.jpg",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/IMG-20260325-WA0069(1)_Beenesh%20Kumar.jpg"
+  },
+  "KASHGANJ_BILLING": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/IMG-20260418-WA0040_Beenesh%20Kumar.jpg",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/IMG-20260325-WA0070(1)_Beenesh%20Kumar.jpg"
+  },
+  "HATHRAS_BILLING": {
+    "curr_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Question/WhatsApp%20Image%202026-04-17%20at%202.50.09%20PM_Prashant%20Kumar.jpeg",
+    "prev_url": "https://itsaicomputers-my.sharepoint.com/personal/tabrez_alam_thesaicomputers_com/Documents/Apps/Microsoft%20Forms/DvVNL%20Mri%20Project%20Office%20Electricity/Previous%20Month%20Reading%20Meter%20Image/WhatsApp%20Image%202026-04-17%20at%203.59.46%20PM_Prashant%20Kumar.jpeg"
+  }
+};
+
+  Object.entries(PHOTO_MAP).forEach(([office, urls]) => {
+    const recs = getRecs(office);
+    let changed = false;
+    recs.forEach(rec => {
+      if (rec.month === 'APR-2026' && rec.seeded) {
+        const newPhotos = [];
+        if (urls.curr_url) {
+          newPhotos.push({
+            name: 'APR-2026 Current Meter',
+            dataUrl: urls.curr_url,
+            isLink: true,
+            label: 'Current Reading Photo'
+          });
+        }
+        if (urls.prev_url) {
+          newPhotos.push({
+            name: 'MAR-2026 Previous Meter',
+            dataUrl: urls.prev_url,
+            isLink: true,
+            label: 'Previous Reading Photo'
+          });
+        }
+        if (newPhotos.length > 0 && rec.photos.length === 0) {
+          rec.photos = newPhotos;
+          changed = true;
+        }
+      }
+    });
+    if (changed) setRecs(office, recs);
+  });
+}
+
 // ============ INIT ============
+seedAprilData();
+injectAprilPhotos();
 populateOfficeSelect();
 document.getElementById('f-cdate').value = new Date().toISOString().split('T')[0];
 </script>
