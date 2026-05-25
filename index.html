@@ -187,6 +187,23 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
 .otype.mri{background:#EEF5FC;color:var(--dk)}
 .otype.bil{background:#FFF7E6;color:#8B5E00}
 .otype.adm{background:#E8E4FF;color:var(--adm)}
+
+/* ---- UPLOAD TILES ---- */
+.upload-tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.upload-tile{border-radius:12px;padding:22px 14px;text-align:center;cursor:pointer;transition:all .25s;border:2px solid var(--bo);user-select:none;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.upload-tile:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(31,78,121,.15)}
+.upload-tile:active{transform:scale(.97)}
+.tile-gallery{background:linear-gradient(135deg,#EEF5FC,#D6EAF8);border-color:var(--lt)}
+.tile-gallery:hover{border-color:var(--md)}
+.tile-camera{background:linear-gradient(135deg,var(--dk),var(--md));border-color:var(--dk)}
+.tile-camera:hover{border-color:var(--md)}
+.tile-icon{font-size:36px;margin-bottom:8px;line-height:1;display:block}
+.tile-title{font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;margin-bottom:3px;line-height:1.2}
+.tile-gallery .tile-title{color:var(--dk)}
+.tile-camera .tile-title{color:#ffffff}
+.tile-sub{font-size:11px;line-height:1.3}
+.tile-gallery .tile-sub{color:var(--mu)}
+.tile-camera .tile-sub{color:rgba(255,255,255,.65)}
 </style>
 </head>
 <body>
@@ -321,21 +338,24 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
         <hr class="divider" />
         <div class="fgrid">
           <div class="fg full">
-            <label>Meter Photo <span class="req">*</span> &nbsp;<span style="font-size:10px;color:var(--mu);font-weight:400">Upload / Camera + OCR auto-read</span></label>
-
-            <!-- BUTTON ROW -->
-            <div class="cam-btn-row">
-              <button type="button" class="cam-btn gallery" onclick="document.getElementById('photo-inp').click()">
-                🖼 Gallery / File
-              </button>
-              <button type="button" class="cam-btn camera" id="cam-open-btn" onclick="openCamera()">
-                📷 Camera (Live)
-              </button>
-
-            </div>
+            <label>Meter Photo <span class="req">*</span> &nbsp;<span style="font-size:10px;color:var(--mu);font-weight:400">📷 Upload or use Camera</span></label>
 
             <!-- HIDDEN FILE INPUT -->
             <input type="file" accept="image/*" multiple id="photo-inp" style="display:none" onchange="handlePhotos(this)" />
+
+            <!-- UPLOAD TILES -->
+            <div class="upload-tiles">
+              <div class="upload-tile tile-gallery" onclick="document.getElementById('photo-inp').click()">
+                <div class="tile-icon">🖼</div>
+                <div class="tile-title">Gallery / File</div>
+                <div class="tile-sub">Choose from device</div>
+              </div>
+              <div class="upload-tile tile-camera" id="cam-open-btn" onclick="openCamera()">
+                <div class="tile-icon">📷</div>
+                <div class="tile-title" id="cam-tile-title">Camera (Live)</div>
+                <div class="tile-sub">Use rear camera</div>
+              </div>
+            </div>
 
             <!-- LIVE CAMERA VIEW -->
             <div class="cam-video-wrap" id="cam-video-wrap">
@@ -344,12 +364,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
               <button class="cam-stop-btn" onclick="stopCamera()">✕ Stop</button>
             </div>
 
-            <!-- DRAG DROP ZONE (fallback) -->
-            <div class="pzone" id="pzone" style="margin-top:0" onclick="document.getElementById('photo-inp').click()">
-              <div style="font-size:26px;margin-bottom:4px">🖼</div>
-              <div style="font-size:12px;font-weight:600;color:var(--dk)">Or drag &amp; drop photos here</div>
-              <div style="font-size:10px;color:var(--mu);margin-top:2px">JPG, PNG — Max 5MB each</div>
-            </div>
+
 
 
 
@@ -1340,7 +1355,7 @@ let lastCapturedForOCR = null;
 async function openCamera() {
   const wrap = document.getElementById('cam-video-wrap');
   const video = document.getElementById('cam-video');
-  const btn = document.getElementById('cam-open-btn');
+  
 
   try {
     // rear camera preferred for meter reading
@@ -1350,8 +1365,7 @@ async function openCamera() {
     });
     video.srcObject = cameraStream;
     wrap.style.display = 'block';
-    btn.textContent = '🟢 Camera ON';
-    btn.disabled = true;
+    btn.querySelector('.tile-title').textContent = '🟢 Camera ON';
   } catch(err) {
     // fallback: open file picker with camera
     const inp = document.createElement('input');
@@ -1370,7 +1384,7 @@ function stopCamera() {
     cameraStream = null;
   }
   document.getElementById('cam-video-wrap').style.display = 'none';
-  const btn = document.getElementById('cam-open-btn');
+  
   btn.textContent = '📷 Camera (Live)';
   btn.disabled = false;
 }
