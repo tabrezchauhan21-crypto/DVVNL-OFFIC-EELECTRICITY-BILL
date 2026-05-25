@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DvVNL Electricity Tracker — Sai Computers</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
 :root{
@@ -136,32 +135,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
 .pplab{position:absolute;bottom:0;left:0;right:0;background:rgba(31,78,121,.85);color:#fff;font-size:10px;font-weight:700;padding:3px 7px;text-align:center}
 .pprm{position:absolute;top:5px;right:5px;background:rgba(192,57,43,.9);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 
-/* CAMERA & OCR */
-.cam-btn-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
-.cam-btn{flex:1;min-width:120px;height:44px;border-radius:9px;border:none;font-family:"DM Sans",sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .2s}
-.cam-btn.gallery{background:#EEF5FC;color:var(--dk);border:1.5px solid var(--lt)}
-.cam-btn.gallery:hover{background:var(--lt)}
-.cam-btn.camera{background:var(--dk);color:#fff}
-.cam-btn.camera:hover{background:var(--md)}
-.cam-btn.ocr-btn{background:linear-gradient(135deg,#F0A500,#FFD166);color:var(--dk)}
-.cam-btn.ocr-btn:hover{opacity:.9}
-.cam-btn:disabled{opacity:.5;cursor:not-allowed}
-.ocr-result-box{background:#F0FFF8;border:1.5px solid #9FD4B3;border-radius:9px;padding:12px 14px;margin-top:10px;display:none}
-.ocr-result-box .ocr-label{font-size:10px;font-weight:700;color:var(--ok);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-.ocr-reading-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.ocr-reading-val{font-family:"Rajdhani",sans-serif;font-size:28px;font-weight:700;color:var(--dk)}
-.ocr-use-btn{background:var(--ok);color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:"DM Sans",sans-serif}
-.ocr-use-btn:hover{opacity:.9}
-.ocr-raw{font-size:10px;color:var(--mu);margin-top:4px;font-family:"DM Mono",monospace;word-break:break-all}
-.ocr-progress{background:#EEF5FC;border:1px solid var(--lt);border-radius:8px;padding:10px 14px;margin-top:8px;display:none;align-items:center;gap:10px}
-.ocr-progress .spin{width:18px;height:18px;border:2px solid var(--lt);border-top-color:var(--dk);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
-@keyframes spin{to{transform:rotate(360deg)}}
-.ocr-progress .prog-text{font-size:12px;color:var(--dk);font-weight:500}
-.cam-video-wrap{display:none;position:relative;border-radius:10px;overflow:hidden;background:#000;margin-bottom:10px}
-.cam-video-wrap video{width:100%;max-height:260px;display:block;object-fit:cover}
-.cam-capture-btn{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:#fff;color:var(--dk);border:none;border-radius:50px;padding:10px 24px;font-size:13px;font-weight:700;cursor:pointer;font-family:"DM Sans",sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.3);display:flex;align-items:center;gap:7px}
-.cam-capture-btn:hover{background:var(--ac)}
-.cam-stop-btn{position:absolute;top:8px;right:8px;background:rgba(192,57,43,.85);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-weight:700}
 /* MODAL */
 .mback{position:fixed;inset:0;background:rgba(0,0,0,.76);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px}
 .mback.on{display:flex}
@@ -358,9 +331,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
               <button type="button" class="cam-btn camera" id="cam-open-btn" onclick="openCamera()">
                 📷 Camera (Live)
               </button>
-              <button type="button" class="cam-btn ocr-btn" id="ocr-btn" onclick="runOCR()" disabled>
-                🔍 Read Meter (OCR)
-              </button>
+
             </div>
 
             <!-- HIDDEN FILE INPUT -->
@@ -380,21 +351,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
               <div style="font-size:10px;color:var(--mu);margin-top:2px">JPG, PNG — Max 5MB each</div>
             </div>
 
-            <!-- OCR PROGRESS -->
-            <div class="ocr-progress" id="ocr-progress">
-              <div class="spin"></div>
-              <div class="prog-text" id="ocr-prog-text">Initializing OCR...</div>
-            </div>
 
-            <!-- OCR RESULT -->
-            <div class="ocr-result-box" id="ocr-result-box">
-              <div class="ocr-label">🔍 OCR Detected Reading</div>
-              <div class="ocr-reading-row">
-                <div class="ocr-reading-val" id="ocr-reading-val">—</div>
-                <button class="ocr-use-btn" onclick="useOCRReading()">✅ Use This Reading</button>
-              </div>
-              <div class="ocr-raw" id="ocr-raw-text"></div>
-            </div>
+
+
 
             <div class="ppgrid" id="pp-grid"></div>
           </div>
@@ -893,7 +852,6 @@ function handlePhotos(inp) {
       photos.push({name:f.name, dataUrl:e.target.result});
       lastCapturedForOCR = e.target.result;
       renderPP();
-      document.getElementById('ocr-btn').disabled = false;
     };
     r.readAsDataURL(f);
   });
@@ -1434,7 +1392,6 @@ function capturePhoto() {
       lastCapturedForOCR = e.target.result;
       renderPP();
       // Enable OCR button
-      document.getElementById('ocr-btn').disabled = false;
       toast('📸 Photo captured! Click "Read Meter (OCR)" to auto-read.', 'ok');
       stopCamera();
     };
@@ -1442,81 +1399,6 @@ function capturePhoto() {
   }, 'image/jpeg', 0.92);
 }
 
-// ============ OCR ============
-let ocrDetectedNumber = null;
-
-async function runOCR() {
-  // Use last captured or last uploaded photo
-  const targetImg = lastCapturedForOCR || (photos.length ? photos[photos.length-1].dataUrl : null);
-  if (!targetImg) { toast('No photo to scan. Capture or upload first.', 'er'); return; }
-
-  const progEl = document.getElementById('ocr-progress');
-  const progText = document.getElementById('ocr-prog-text');
-  const resultBox = document.getElementById('ocr-result-box');
-  const ocrBtn = document.getElementById('ocr-btn');
-
-  progEl.style.display = 'flex';
-  resultBox.style.display = 'none';
-  ocrBtn.disabled = true;
-  ocrBtn.textContent = '⏳ Reading...';
-
-  try {
-    progText.textContent = 'Loading OCR engine...';
-
-    const worker = await Tesseract.createWorker('eng', 1, {
-      logger: m => {
-        if (m.status === 'recognizing text') {
-          progText.textContent = 'Reading meter... ' + Math.round((m.progress||0)*100) + '%';
-        }
-      }
-    });
-
-    // Set params optimized for meter digits
-    await worker.setParameters({
-      tessedit_char_whitelist: '0123456789.',
-      tessedit_pageseg_mode: '6',
-    });
-
-    progText.textContent = 'Analyzing meter digits...';
-    const result = await worker.recognize(targetImg);
-    await worker.terminate();
-
-    const rawText = result.data.text.trim();
-    console.log('OCR raw:', rawText);
-
-    // Extract numbers from OCR text
-    const numbers = rawText.match(/\d+\.?\d*/g);
-    const filtered = numbers ? numbers.filter(n => {
-      const v = parseFloat(n);
-      return v > 100 && v < 999999; // typical KWH meter range
-    }) : [];
-
-    progEl.style.display = 'none';
-    ocrBtn.disabled = false;
-    ocrBtn.textContent = '🔍 Read Meter (OCR)';
-
-    if (filtered.length > 0) {
-      // Pick the largest plausible number (meter reading)
-      ocrDetectedNumber = filtered.sort((a,b) => parseFloat(b)-parseFloat(a))[0];
-      document.getElementById('ocr-reading-val').textContent = ocrDetectedNumber;
-      document.getElementById('ocr-raw-text').textContent = 'Raw OCR: "' + rawText.replace(/\n/g,' ').slice(0,120) + '"';
-      resultBox.style.display = 'block';
-      toast('✅ Meter reading detected: ' + ocrDetectedNumber, 'ok');
-    } else {
-      document.getElementById('ocr-reading-val').textContent = '? Not detected';
-      document.getElementById('ocr-raw-text').textContent = 'Raw OCR: "' + rawText.replace(/\n/g,' ').slice(0,120) + '" — try a clearer photo.';
-      ocrDetectedNumber = null;
-      resultBox.style.display = 'block';
-      toast('⚠ Could not read meter clearly. Enter manually.', '');
-    }
-  } catch(err) {
-    progEl.style.display = 'none';
-    ocrBtn.disabled = false;
-    ocrBtn.textContent = '🔍 Read Meter (OCR)';
-    toast('OCR error: ' + err.message, 'er');
-    console.error('OCR error:', err);
-  }
-}
 
 function useOCRReading() {
   if (!ocrDetectedNumber) return;
