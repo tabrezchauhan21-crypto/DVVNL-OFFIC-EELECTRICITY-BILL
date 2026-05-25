@@ -293,10 +293,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
         <div class="fgrid">
           <div class="fg">
             <label>Month <span class="req">*</span></label>
-            <select id="f-month">
-              <option>MAY-2026</option><option>APR-2026</option><option>MAR-2026</option>
-              <option>FEB-2026</option><option>JAN-2026</option><option>DEC-2025</option><option>NOV-2025</option>
-            </select>
+            <select id="f-month" readonly style="background:#f0f0f0;pointer-events:none"></select>
           </div>
           <div class="fg">
             <label>Current Reading Date <span class="req">*</span></label>
@@ -392,8 +389,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
           <input type="text" id="srch" placeholder="🔍 Search..." oninput="renderRecs()" />
           <select class="month-sel" id="fil-mon" onchange="renderRecs()">
             <option value="">All Months</option>
-            <option>MAY-2026</option><option>APR-2026</option><option>MAR-2026</option>
-            <option>FEB-2026</option><option>JAN-2026</option><option>DEC-2025</option><option>NOV-2025</option>
           </select>
           <button class="btn bc bsm" onclick="exportXL('office')">⬇ Export Excel</button>
           <button class="btn bo-btn bsm" onclick="retrySyncAll()" title="Retry failed syncs">🔄 Retry Sync</button>
@@ -403,7 +398,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
             <thead><tr>
               <th>#</th><th>Month</th><th>Date</th><th>Landlord (Agreement)</th>
               <th>Prev KWH</th><th>Curr KWH</th><th>Units</th><th>Rate</th><th>Amount ₹</th>
-              <th>Photo</th><th>Sync</th><th>Actions</th>
+              <th>Photo</th><th>Sync</th>
             </tr></thead>
             <tbody id="recs-body"></tbody>
           </table>
@@ -427,8 +422,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
             <label style="font-size:11px;font-weight:700;color:var(--mu);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Month A</label>
             <select class="month-sel" id="cmp-a" onchange="renderCmp()">
               <option value="">—</option>
-              <option>MAY-2026</option><option>APR-2026</option><option>MAR-2026</option>
-              <option>FEB-2026</option><option>JAN-2026</option><option>DEC-2025</option><option>NOV-2025</option>
             </select>
           </div>
           <div style="font-size:18px;padding-bottom:2px">⇄</div>
@@ -436,8 +429,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
             <label style="font-size:11px;font-weight:700;color:var(--mu);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Month B</label>
             <select class="month-sel" id="cmp-b" onchange="renderCmp()">
               <option value="">—</option>
-              <option>MAY-2026</option><option>APR-2026</option><option>MAR-2026</option>
-              <option>FEB-2026</option><option>JAN-2026</option><option>DEC-2025</option><option>NOV-2025</option>
             </select>
           </div>
         </div>
@@ -526,8 +517,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
           <input type="text" id="adm-srch" placeholder="🔍 Search office, landlord, month..." oninput="renderAllData()" />
           <select class="month-sel" id="adm-fil-mon" onchange="renderAllData()">
             <option value="">All Months</option>
-            <option>MAY-2026</option><option>APR-2026</option><option>MAR-2026</option>
-            <option>FEB-2026</option><option>JAN-2026</option><option>DEC-2025</option><option>NOV-2025</option>
           </select>
           <select class="month-sel" id="adm-fil-off" onchange="renderAllData()"><option value="">All Offices</option></select>
           <button class="btn bc bsm" onclick="exportXL('admin')">⬇ Export All Excel</button>
@@ -613,7 +602,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
         <div class="admin-section">
           <div class="asec-title">📊 Google Sheets Integration</div>
           <div style="font-size:12px;color:var(--tx);margin-bottom:8px">Data automatically syncs to Google Sheet on every submission.</div>
-          <a href="https://script.google.com/macros/s/AKfycbzqaHKVSecUl6d_4Dp7nvupbRBNi1nUy2-er5wS8mJ2Kvouo7HPAwgBQQxcf3BsngSj/exec" target="_blank" style="font-size:11px;color:var(--md);word-break:break-all">🔗 API Endpoint (Active)</a>
+          <a href="https://script.google.com/macros/s/AKfycbzJZy0opxiRyyQVGlUgc__0m53wBO4XY8DsclWQ8GLz104ziQUqLSplNpajtG14mzg5eA/exec" target="_blank" style="font-size:11px;color:var(--md);word-break:break-all">🔗 API Endpoint (Active)</a>
           <div style="margin-top:10px">
             <a href="https://drive.google.com" target="_blank" class="btn bs bsm" style="text-decoration:none;display:inline-flex">📊 Open Google Drive</a>
           </div>
@@ -767,8 +756,10 @@ function doLogin() {
   document.getElementById('bn-office').textContent = off;
   document.getElementById('f-cdate').value = new Date().toISOString().split('T')[0];
   document.getElementById('f-rate').value = CFG.globalRate;
+  setAutoMonth();
   populateLandlordSelect();
   prefillPrev();
+  populateMonthFilters();
   updateBanner();
   document.getElementById('s-login').classList.remove('on');
   document.getElementById('s-app').classList.add('on');
@@ -897,6 +888,12 @@ function saveReading() {
   if (!month || !cdate || isNaN(curr)) { toast('Please fill Month, Date, Current Reading.','er'); return; }
   if (!landlord) { toast('Landlord Name (As Agreement) is compulsory!','er'); return; }
   if (!photos.length) { toast('Please upload at least one meter photo.','er'); return; }
+  // Block duplicate month entry
+  const existingEntry = getRecs(curOffice).find(r => r.month === month);
+  if (existingEntry) {
+    toast('⚠ ' + month + ' ka record already exist karta hai is office mein!', 'er');
+    return;
+  }
 
   const diff = prev !== null ? (curr - prev) : null;
   const amount = diff !== null ? Math.round(diff * rate) : null;
@@ -915,6 +912,7 @@ function saveReading() {
   setRecs(curOffice, recs);
   toast('✅ Record saved locally!','ok');
   clearForm(); updateBanner(); renderRecs(); renderCharts();
+  populateMonthFilters();
   syncToSheet(rec);
 }
 
@@ -947,7 +945,7 @@ function swAdmTab(name, btn) {
     document.getElementById('atp-'+n).classList.toggle('on', n===name);
   });
   if(name==='overview') { renderAdmSummary(); renderAdmChart(); }
-  if(name==='alldata') { renderAllData(); populateAdmOfficeFilter(); }
+  if(name==='alldata') { renderAllData(); populateAdmOfficeFilter(); populateAdminMonthFilter(); }
   if(name==='offices') renderOfficesList();
 }
 
@@ -1423,9 +1421,10 @@ function useOCRReading() {
 }
 
 // ============ GOOGLE SHEETS SYNC ============
-const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzqaHKVSecUl6d_4Dp7nvupbRBNi1nUy2-er5wS8mJ2Kvouo7HPAwgBQQxcf3BsngSj/exec';
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzJZy0opxiRyyQVGlUgc__0m53wBO4XY8DsclWQ8GLz104ziQUqLSplNpajtG14mzg5eA/exec';
 
 function syncToSheet(rec) {
+  // Build payload — include full photos for Drive upload
   const payload = {
     office: rec.office,
     month: rec.month,
@@ -1439,30 +1438,61 @@ function syncToSheet(rec) {
     amount: rec.amount ?? '',
     paidTo: rec.paidTo || '',
     remarks: rec.remarks || '',
-    photosCount: rec.photos ? rec.photos.length : 0,
-    savedAt: rec.savedAt
+    savedAt: rec.savedAt,
+    photos: rec.photos ? rec.photos.map(p => ({
+      name: p.name,
+      dataUrl: p.dataUrl,
+      isLink: p.isLink || false,
+      label: p.label || ''
+    })) : []
   };
 
-  // Show syncing indicator
-  toast('📤 Syncing to Google Sheet...', '');
+  toast('📤 Syncing + uploading photos to Drive...', '');
 
   fetch(SHEET_URL, {
     method: 'POST',
-    mode: 'no-cors',
+    mode: 'cors',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   })
-  .then(() => {
-    toast('✅ Synced to Google Sheet!', 'ok');
-    // Mark as synced in localStorage
-    const recs = getRecs(rec.office);
-    const idx = recs.findIndex(r => r.id === rec.id);
-    if (idx !== -1) { recs[idx].synced = true; setRecs(rec.office, recs); }
-    renderRecs();
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === 'success') {
+      toast('✅ Synced! Photos saved to Google Drive.', 'ok');
+      // Save Drive URLs back into local record
+      const recs = getRecs(rec.office);
+      const idx = recs.findIndex(r => r.id === rec.id);
+      if (idx !== -1) {
+        recs[idx].synced = true;
+        if (data.currPhotoUrl) recs[idx].driveUrlCurr = data.currPhotoUrl;
+        if (data.prevPhotoUrl) recs[idx].driveUrlPrev = data.prevPhotoUrl;
+        setRecs(rec.office, recs);
+      }
+      renderRecs();
+    } else {
+      throw new Error(data.message || 'Unknown error');
+    }
   })
   .catch(err => {
-    toast('⚠ Sheet sync failed — data saved locally.', 'er');
-    console.error('Sheet sync error:', err);
+    // Fallback to no-cors if CORS fails
+    console.warn('CORS failed, retrying no-cors:', err);
+    fetch(SHEET_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(() => {
+      toast('✅ Synced to Sheet! (Drive upload pending)', 'ok');
+      const recs = getRecs(rec.office);
+      const idx = recs.findIndex(r => r.id === rec.id);
+      if (idx !== -1) { recs[idx].synced = true; setRecs(rec.office, recs); }
+      renderRecs();
+    })
+    .catch(e => {
+      toast('⚠ Sync failed — saved locally only.', 'er');
+      console.error('Sync error:', e);
+    });
   });
 }
 
@@ -2100,6 +2130,105 @@ function injectAprilPhotos() {
     });
     if (changed) setRecs(office, recs);
   });
+}
+
+// ============ AUTO MONTH ============
+const MONTH_NAMES = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+function getCurrentMonthStr() {
+  const now = new Date();
+  return MONTH_NAMES[now.getMonth()] + '-' + now.getFullYear();
+}
+
+function setAutoMonth() {
+  const mon = getCurrentMonthStr();
+  const sel = document.getElementById('f-month');
+  if (!sel) return;
+  sel.innerHTML = '<option value="' + mon + '">' + mon + '</option>';
+  sel.value = mon;
+}
+
+function getAvailableMonths() {
+  // Get all months from existing records + current month
+  const recs = getRecs(curOffice);
+  const months = new Set();
+  months.add(getCurrentMonthStr());
+  recs.forEach(r => { if(r.month) months.add(r.month); });
+  // Sort: newest first
+  return Array.from(months).sort((a, b) => {
+    const [am, ay] = a.split('-'); const [bm, by] = b.split('-');
+    if (ay !== by) return parseInt(by) - parseInt(ay);
+    return MONTH_NAMES.indexOf(bm) - MONTH_NAMES.indexOf(am);
+  });
+}
+
+function getAvailableMonthsAll() {
+  // All months across all offices
+  const months = new Set();
+  months.add(getCurrentMonthStr());
+  CFG.offices.forEach(o => {
+    getRecs(o.name).forEach(r => { if(r.month) months.add(r.month); });
+  });
+  return Array.from(months).sort((a, b) => {
+    const [am, ay] = a.split('-'); const [bm, by] = b.split('-');
+    if (ay !== by) return parseInt(by) - parseInt(ay);
+    return MONTH_NAMES.indexOf(bm) - MONTH_NAMES.indexOf(am);
+  });
+}
+
+function populateMonthFilters() {
+  const months = getAvailableMonths();
+  // fil-mon (office records filter)
+  const filMon = document.getElementById('fil-mon');
+  if (filMon) {
+    filMon.innerHTML = '<option value="">All Months</option>';
+    months.forEach(m => {
+      const o = document.createElement('option'); o.value = m; o.textContent = m;
+      filMon.appendChild(o);
+    });
+  }
+  // cmp-a, cmp-b
+  ['cmp-a','cmp-b'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">—</option>';
+    months.forEach(m => {
+      const o = document.createElement('option'); o.value = m; o.textContent = m;
+      sel.appendChild(o);
+    });
+  });
+}
+
+function populateAdminMonthFilter() {
+  const months = getAvailableMonthsAll();
+  const sel = document.getElementById('adm-fil-mon');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">All Months</option>';
+  months.forEach(m => {
+    const o = document.createElement('option'); o.value = m; o.textContent = m;
+    sel.appendChild(o);
+  });
+}
+
+// CHECK: office already submitted this month?
+function checkDuplicateMonth() {
+  const mon = document.getElementById('f-month')?.value;
+  if (!mon || !curOffice) return;
+  const recs = getRecs(curOffice);
+  const existing = recs.find(r => r.month === mon);
+  const warningId = 'dup-month-warn';
+  let warn = document.getElementById(warningId);
+  if (existing) {
+    if (!warn) {
+      warn = document.createElement('div');
+      warn.id = warningId;
+      warn.style.cssText = 'background:#FFF7E6;border:1px solid #FACA74;border-radius:8px;padding:9px 13px;font-size:12px;color:#7A5100;margin-top:8px';
+      document.getElementById('f-month').parentNode.appendChild(warn);
+    }
+    warn.innerHTML = '⚠ <strong>' + mon + '</strong> ka record already submitted hai is office ke liye. Dobara save karne par duplicate hoga.';
+  } else {
+    if (warn) warn.remove();
+  }
 }
 
 // ============ INIT ============
