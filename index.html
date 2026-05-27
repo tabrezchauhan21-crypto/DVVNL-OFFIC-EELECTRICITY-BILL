@@ -1583,7 +1583,18 @@ function retrySyncAll() {
   toast(`Retrying sync for ${recs.length} record(s)...`, '');
 }
 
-// ============ FETCH OFFICE RECORDS FROM SHEET (on office login) ============
+// ── Helper: sanitize month string from Sheet ─────────────────
+function sanitizeMonth(val) {
+  if (!val) return '';
+  const s = String(val).trim();
+  // Already correct format e.g. "MAY-2026"
+  if (/^[A-Z]{3}-\d{4}$/.test(s)) return s;
+  // Date object string e.g. "Fri May 01 2026 00:00:00 GMT+0530..."
+  const MN = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) return MN[d.getMonth()] + '-' + d.getFullYear();
+  return s;
+}
 function fetchOfficeFromSheet(officeName) {
   toast('📥 Records sync ho rahe hain...', '');
   fetch(SHEET_URL + '?action=getAll', { method: 'GET', mode: 'cors' })
@@ -1594,6 +1605,7 @@ function fetchOfficeFromSheet(officeName) {
     const officeRecs = data.records.filter(r => r.office === officeName);
     const existing = getRecs(officeName);
     officeRecs.forEach(rec => {
+      rec.month = sanitizeMonth(rec.month);
       const dup = existing.find(r => r.month === rec.month);
       if (dup) return;
       rec.synced = true;
@@ -1666,6 +1678,7 @@ function fetchFromSheet(isManual) {
     let added = 0, skipped = 0;
     data.records.forEach(rec => {
       if (!rec.office || !rec.month) return;
+      rec.month = sanitizeMonth(rec.month);
       const existing = getRecs(rec.office);
       const dup = existing.find(r => r.month === rec.month);
       if (dup) { skipped++; return; }
