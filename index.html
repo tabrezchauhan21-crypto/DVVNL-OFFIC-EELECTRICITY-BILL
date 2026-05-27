@@ -204,6 +204,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
 .tile-sub{font-size:11px;line-height:1.3}
 .tile-gallery .tile-sub{color:var(--mu)}
 .tile-camera .tile-sub{color:rgba(255,255,255,.65)}
+/* ---- CAMERA VIDEO ---- */
+.cam-video-wrap{display:none;margin-top:12px;border-radius:10px;overflow:hidden;border:2px solid var(--md);position:relative;background:#000}
+.cam-video-wrap video{width:100%;max-height:300px;display:block;object-fit:cover}
+.cam-capture-btn{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:var(--ok);color:#fff;border:none;border-radius:8px;padding:9px 22px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
+.cam-stop-btn{position:absolute;top:7px;right:7px;background:rgba(192,57,43,.85);color:#fff;border:none;border-radius:50%;width:28px;height:28px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 </style>
 </head>
 <body>
@@ -488,11 +493,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
     <!-- OVERVIEW -->
     <div class="tpanel on" id="atp-overview">
       <div class="card" style="border-color:#D0C8F0">
+        <div class="ctitle adm"><div class="ibadge adm">📅</div>Current Month Submission Status — <span id="cur-mon-lbl" style="color:var(--ac)"></span></div>
+        <div id="cur-month-status-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px"></div>
+      </div>
+
+      <div class="card" style="border-color:#D0C8F0">
         <div class="ctitle adm"><div class="ibadge adm">📊</div>Office-wise Summary (All Months)</div>
         <div style="overflow-x:auto">
           <table class="dtbl adm-tbl" id="adm-summary-tbl">
             <thead><tr>
-              <th>#</th><th>Office Name</th><th>Type</th><th>Records</th>
+              <th>#</th><th>Office Name</th><th>Type</th><th>Rate ₹/u</th><th>Records</th>
               <th>Total Units</th><th>Total Amount ₹</th><th>Last Submission</th>
             </tr></thead>
             <tbody id="adm-sum-body"></tbody>
@@ -644,7 +654,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
 <script>
 // ============ CONFIG / STORAGE ============
 const CFG_KEY = 'dvvnl_cfg';
-const MONTHS = ['NOV-2025','DEC-2025','JAN-2026','FEB-2026','MAR-2026','APR-2026','MAY-2026'];
+// Dynamic MONTHS array: from NOV-2025 to current month + 2 ahead
+(function() {
+  const MN = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const start = {y:2025, m:10}; // NOV-2025 = index 10
+  const now = new Date();
+  const endM = now.getMonth() + 2; // 2 months ahead
+  const endY = endM > 11 ? now.getFullYear()+1 : now.getFullYear();
+  const endMN = endM > 11 ? endM-12 : endM;
+  const arr = [];
+  let y = start.y, m = start.m;
+  while(y < endY || (y === endY && m <= endMN)) {
+    arr.push(MN[m]+'-'+y);
+    m++; if(m>11){m=0;y++;}
+  }
+  window.MONTHS = arr;
+})();
 
 function loadCfg() {
   try { return JSON.parse(localStorage.getItem(CFG_KEY)) || null; } catch { return null; }
@@ -857,7 +882,9 @@ function prefillPrev() {
 function calcDiff() {
   const curr = parseFloat(document.getElementById('f-curr').value);
   const prev = parseFloat(document.getElementById('f-prev').value) || 0;
-  const rate = parseFloat(document.getElementById('f-rate').value) || CFG.globalRate;
+  const offObj2 = CFG.offices.find(o => o.name === curOffice);
+  const defaultRate = (offObj2 && offObj2.rate) ? offObj2.rate : CFG.globalRate;
+  const rate = parseFloat(document.getElementById('f-rate').value) || defaultRate;
   const res = document.getElementById('calc-res');
   if (isNaN(curr)) { res.style.display='none'; return; }
   res.style.display='block';
@@ -1138,6 +1165,24 @@ function renderAdmSummary() {
   const noEl = document.getElementById('adm-sum-nodata');
   body.innerHTML='';
   let hasAny=false;
+  const curMon = getCurrentMonthStr();
+
+  // Current month status panel
+  const statusGrid = document.getElementById('cur-month-status-grid');
+  const curMonLbl = document.getElementById('cur-mon-lbl');
+  if (curMonLbl) curMonLbl.textContent = curMon;
+  if (statusGrid) {
+    statusGrid.innerHTML = '';
+    CFG.offices.forEach(o => {
+      const recs = getRecs(o.name);
+      const submitted = recs.find(r => r.month === curMon);
+      const div = document.createElement('div');
+      div.style.cssText = `background:${submitted?'#E8F5EE':'#FDEDED'};border:1px solid ${submitted?'#9FD4B3':'#F5C6CB'};border-radius:8px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:6px`;
+      div.innerHTML = `<span style="font-size:11px;font-weight:600;color:var(--tx)">${o.name}</span><span style="font-size:11px;font-weight:700;color:${submitted?'var(--ok)':'var(--er)'}">${submitted?'✅ Done':'⏳ Pending'}</span>`;
+      statusGrid.appendChild(div);
+    });
+  }
+
   CFG.offices.forEach((o,i) => {
     const recs=getRecs(o.name);
     if(!recs.length) return;
@@ -1145,11 +1190,13 @@ function renderAdmSummary() {
     const tu=recs.reduce((s,r)=>s+(r.diff||0),0);
     const ta=recs.reduce((s,r)=>s+(r.amount||0),0);
     const last=recs[recs.length-1];
+    const offRate = o.rate || CFG.globalRate;
     const tr=document.createElement('tr');
     tr.innerHTML=`
       <td>${i+1}</td>
       <td style="font-weight:600">${o.name}</td>
       <td><span class="otype ${o.type.toLowerCase()}">${o.type}</span></td>
+      <td style="font-weight:700;color:var(--ok)">₹${offRate}/u</td>
       <td style="font-weight:700;text-align:center">${recs.length}</td>
       <td style="color:var(--dk);font-weight:700;text-align:center">${tu}</td>
       <td style="color:var(--ok);font-weight:700">₹${Math.round(ta).toLocaleString('en-IN')}</td>
@@ -1390,23 +1437,23 @@ function exportXL(mode) {
 // ============ CAMERA ============
 let cameraStream = null;
 let lastCapturedForOCR = null;
+let ocrDetectedNumber = null;
 
 async function openCamera() {
   const wrap = document.getElementById('cam-video-wrap');
   const video = document.getElementById('cam-video');
-  
+  const tileBtn = document.getElementById('cam-open-btn');
+  const tileTitle = document.getElementById('cam-tile-title');
 
   try {
-    // rear camera preferred for meter reading
     cameraStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
       audio: false
     });
     video.srcObject = cameraStream;
     wrap.style.display = 'block';
-    btn.querySelector('.tile-title').textContent = '🟢 Camera ON';
+    if (tileTitle) tileTitle.textContent = '🟢 Camera ON';
   } catch(err) {
-    // fallback: open file picker with camera
     const inp = document.createElement('input');
     inp.type = 'file';
     inp.accept = 'image/*';
@@ -1422,10 +1469,10 @@ function stopCamera() {
     cameraStream.getTracks().forEach(t => t.stop());
     cameraStream = null;
   }
-  document.getElementById('cam-video-wrap').style.display = 'none';
-  
-  btn.textContent = '📷 Camera (Live)';
-  btn.disabled = false;
+  const wrap = document.getElementById('cam-video-wrap');
+  if (wrap) wrap.style.display = 'none';
+  const tileTitle = document.getElementById('cam-tile-title');
+  if (tileTitle) tileTitle.textContent = 'Camera (Live)';
 }
 
 function capturePhoto() {
