@@ -731,10 +731,19 @@ function populateLandlordSelect(){
 // ── PREFILL from Sheet records ────────────────────────
 function prefillPrev(){
   if(!officeSheetRecs.length) return;
-  const sorted=[...officeSheetRecs].sort((a,b)=>new Date(b.currDate||0)-new Date(a.currDate||0));
+  // Sort by currDate descending, fallback to savedAt
+  const sorted=[...officeSheetRecs].sort((a,b)=>{
+    const da=new Date(a.currDate||a.savedAt||0);
+    const db=new Date(b.currDate||b.savedAt||0);
+    return db-da;
+  });
   const last=sorted[0];
-  document.getElementById('f-prev').value=last.currReading||'';
-  document.getElementById('f-pdate').value=last.currDate||'';
+  if(last.currReading!=null && last.currReading!==''){
+    document.getElementById('f-prev').value=last.currReading;
+  }
+  if(last.currDate){
+    document.getElementById('f-pdate').value=last.currDate;
+  }
 }
 
 // ── CALC ─────────────────────────────────────────────
@@ -1273,10 +1282,21 @@ function loadOfficeFromSheet(){
     if(!data.records) throw new Error('No records in response');
     officeSheetRecs=data.records
       .filter(r=>r.office===curOffice)
-      .map(r=>({...r,month:sanitizeMonth(r.month)}));
+      .map(r=>({
+        ...r,
+        month:       sanitizeMonth(r.month),
+        currReading: r.currReading!=null && r.currReading!=='' ? parseFloat(r.currReading) : null,
+        prevReading: r.prevReading!=null && r.prevReading!=='' ? parseFloat(r.prevReading) : null,
+        diff:        r.diff!=null && r.diff!==''   ? parseFloat(r.diff)   : null,
+        amount:      r.amount!=null && r.amount!=='' ? parseFloat(r.amount) : null,
+        rate:        r.rate!=null && r.rate!==''   ? parseFloat(r.rate)   : null,
+      }));
     updateBanner();renderRecs();renderCharts();populateMonthFilters();
     prefillPrev();
-    toast('Records loaded — '+officeSheetRecs.length+' record(s) found.','ok');
+    const msg = officeSheetRecs.length
+      ? 'Records loaded — ' + officeSheetRecs.length + ' record(s) found.'
+      : 'No previous records found for this office.';
+    toast(msg, officeSheetRecs.length ? 'ok' : '');
   })
   .catch(err=>{
     toast('Could not load records from Sheet: '+err.message,'er');
