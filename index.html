@@ -525,6 +525,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
           <div class="asec-title">📦 Export Data</div>
           <button class="btn bc bsm" onclick="exportXL('admin')">⬇ Export All Data (Excel)</button>
         </div>
+
+        <div class="admin-section" style="border-color:#9FD4B3">
+          <div class="asec-title" style="color:var(--ok)">📥 Seed Historical Data (One-Time)</div>
+          <div style="font-size:12px;color:var(--tx);margin-bottom:10px">Use this to load April-2026 readings into the Sheet so Previous Reading auto-fills correctly for all offices. Run only once.</div>
+          <button class="btn bs bsm" onclick="seedAprilData()" id="seed-btn">📥 Seed April-2026 Data to Sheet</button>
+          <div id="seed-status" style="font-size:11px;color:var(--mu);margin-top:8px"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -888,13 +895,19 @@ function submitToSheet(rec){
     savedAt:rec.savedAt,
     photos:rec.photos
   };
+  // Use no-cors mode — Apps Script doesn't support preflight
+  // We send as text/plain which Apps Script accepts without preflight
   return fetch(SHEET_URL,{
     method:'POST',
-    headers:{'Content-Type':'application/json'},
+    mode:'no-cors',
+    headers:{'Content-Type':'text/plain'},
     body:JSON.stringify(payload)
   })
-  .then(r=>r.json())
-  .then(d=>{if(d.status!=='success') throw new Error(d.message||'Sheet error');return d;});
+  .then(()=>{
+    // no-cors returns opaque response — we can't read it
+    // Assume success if no network error thrown
+    return {status:'success'};
+  });
 }
 
 function clearForm(){
@@ -1267,11 +1280,11 @@ function loadConfigFromSheet() {
 function saveConfigToSheet() {
   return fetch(SHEET_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ action: 'saveConfig', config: CFG })
   })
-  .then(r => r.json())
-  .then(d => { if (d.status !== 'success') throw new Error(d.message); })
+  .then(() => ({ status: 'success' }))
   .catch(err => { toast('Config save failed: ' + err.message, 'er'); });
 }
 function loadOfficeFromSheet(){
@@ -1360,6 +1373,71 @@ function exportXL(mode){
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Records');
   XLSX.writeFile(wb,'DvVNL_Electricity_'+(mode==='admin'?'ALL':curOffice)+'_'+getCurrentMonthStr()+'.xlsx');
+}
+
+// ── SEED APRIL-2026 DATA (one-time admin action) ─────
+const APRIL_DATA = [
+  {office:'AGRA GUEST HOUSE_MRI',  landlord:'ANKUR',                  currDate:'2026-04-19', currReading:15376, prevReading:null, prevDate:'', rate:8,  paidTo:'PAID BY TAMREZ ALAM',  diff:null, amount:null},
+  {office:'AGRA OFFICE_MRI',       landlord:'PAID BY TAMREZ ALAM',    currDate:'2026-04-19', currReading:17151, prevReading:null, prevDate:'', rate:8,  paidTo:'PAID BY TAMREZ ALAM',  diff:null, amount:null},
+  {office:'Auriyya (Kanpur)_MRI',  landlord:'RAJEEV SHUKLA',          currDate:'2026-04-18', currReading:4240,  prevReading:null, prevDate:'', rate:8,  paidTo:'Landlord (Sub Meter)', diff:null, amount:null},
+  {office:'CHIBRAMAU_MRI',         landlord:'SONI',                   currDate:'2026-04-18', currReading:2366,  prevReading:null, prevDate:'', rate:8,  paidTo:'Landlord (Sub Meter)', diff:null, amount:null},
+  {office:'Chitrakoot_MRI',        landlord:'SUDHA KUSHWAHA',         currDate:'2026-04-19', currReading:1155,  prevReading:null, prevDate:'', rate:7,  paidTo:'Landlord (Sub Meter)', diff:null, amount:null},
+  {office:'ETAH_MRI',              landlord:'ALKSHWNDRA YADAV',       currDate:'2026-04-18', currReading:11283, prevReading:null, prevDate:'', rate:10, paidTo:'Landlord (Sub Meter)', diff:null, amount:null},
+  {office:'ETWAH_MRI',             landlord:'MANJU LATA DRIWEDI',     currDate:'2026-04-18', currReading:4452,  prevReading:null, prevDate:'', rate:7,  paidTo:'Landlord (Sub Meter)', diff:null, amount:null},
+  {office:'FARUKKABAD_MRI',        landlord:'VITOLI DEVI',            currDate:'2026-04-18', currReading:1332,  prevReading:null, prevDate:'', rate:8,  paidTo:'Landlord (Sub Meter)', diff:null, amount:null},
+  {office:'FIROZABAD_MRI',         landlord:'RAKESH SINGH RAJAWAT',   currDate:'2026-04-18', currReading:6847,  prevReading:null, prevDate:'', rate:6,  paidTo:'Landlord (Sub Meter)', diff:null, amount:null},
+  {office:'HAMIRPUR_MRI',          landlord:'DINESH KUSHWAHA',        currDate:'2026-04-18', currReading:2026,  prevReading:null, prevDate:'', rate:7,  paidTo:'Landlord (Sub Meter)', diff:null, amount:null},
+  {office:'HATHRAS_MRI',           landlord:'BEENA',                  currDate:'2026-04-01', currReading:null,  prevReading:null, prevDate:'', rate:8,  paidTo:'Landlord (Sub Meter)', diff:120,  amount:960, remarks:'120 UNIT FIX FOR MONTH'},
+  {office:'JHANSI_MRI',            landlord:'Surendra Singh wadhwa',  currDate:'2026-04-19', currReading:8823,  prevReading:null, prevDate:'', rate:8,  paidTo:'Landlord (Sub Meter)', diff:null, amount:null},
+  {office:'KANNUJ_MRI',            landlord:'RAVINDRA KUMAR SHUKLA',  currDate:'2026-04-18', currReading:3421,  prevReading:null, prevDate:'', rate:8,  paidTo:'Landlord (Sub Meter)', diff:null, amount:null},
+  {office:'KANPUR_MRI',            landlord:'MAHESHWARI TOMAR',       currDate:'2026-04-18', currReading:785,   prevReading:null, prevDate:'', rate:9,  paidTo:'Landlord (Sub Meter)', diff:null, amount:null},
+  {office:'MAHOBA_MRI',            landlord:'KAMLESH',                currDate:'2026-04-18', currReading:3860,  prevReading:null, prevDate:'', rate:7,  paidTo:'Landlord (Sub Meter)', diff:null, amount:null},
+  {office:'MAINPURI_MRI',          landlord:'Subhas Chandra',         currDate:'2026-04-18', currReading:8693,  prevReading:null, prevDate:'', rate:8,  paidTo:'Landlord (Sub Meter)', diff:null, amount:null},
+  {office:'MATHURA_MRI',           landlord:'Rajani',                 currDate:'2026-04-17', currReading:2413,  prevReading:null, prevDate:'', rate:8,  paidTo:'Landlord (Sub Meter)', diff:null, amount:null},
+  {office:'ORAI (Jhansi)_MRI',     landlord:'Ashish Gupta',           currDate:'2026-04-19', currReading:5017,  prevReading:null, prevDate:'', rate:8,  paidTo:'Landlord (Sub Meter)', diff:null, amount:null},
+  {office:'RANIYA (KANPUR DEHAT)_MRI', landlord:'TILAK RAJ GUPTA',   currDate:'2026-04-18', currReading:690,   prevReading:null, prevDate:'', rate:7,  paidTo:'Landlord (Sub Meter)', diff:null, amount:null},
+  {office:'ALIGARH_BILLING',       landlord:'SUNITA DEVI',            currDate:'2026-04-18', currReading:1017,  prevReading:null, prevDate:'', rate:9,  paidTo:'Landlord (Sub Meter)', diff:null, amount:null},
+  {office:'ETAH_BILLING',          landlord:'Prabhakar gupta',        currDate:'2026-04-21', currReading:788,   prevReading:null, prevDate:'', rate:7,  paidTo:'Landlord (Sub Meter)', diff:null, amount:null},
+  {office:'KASHGANJ_BILLING',      landlord:'Shishupal Singh',        currDate:'2026-04-18', currReading:5827,  prevReading:null, prevDate:'', rate:7,  paidTo:'Landlord (Sub Meter)', diff:null, amount:null},
+  {office:'HATHRAS_BILLING',       landlord:'Omvati bhardwaj',        currDate:'2026-04-21', currReading:2788,  prevReading:null, prevDate:'', rate:7,  paidTo:'Landlord (Sub Meter)', diff:null, amount:null},
+];
+
+async function seedAprilData() {
+  const btn = document.getElementById('seed-btn');
+  const status = document.getElementById('seed-status');
+  if (!confirm('This will submit ' + APRIL_DATA.length + ' April-2026 records to Google Sheet.\n\nRun only ONCE — duplicates will be created if run again.\n\nProceed?')) return;
+
+  btn.disabled = true;
+  let done = 0, failed = 0;
+
+  for (const d of APRIL_DATA) {
+    status.textContent = 'Submitting ' + (done + failed + 1) + ' / ' + APRIL_DATA.length + ' — ' + d.office;
+    const rec = {
+      ...d,
+      month: 'APR-2026',
+      remarks: d.remarks || 'Seeded April-2026 reading',
+      savedAt: new Date().toLocaleString('en-IN'),
+      photos: []
+    };
+    try {
+      await fetch(SHEET_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(rec)
+      });
+      done++;
+    } catch(e) {
+      failed++;
+    }
+    // Small delay between requests
+    await new Promise(r => setTimeout(r, 800));
+  }
+
+  btn.disabled = false;
+  status.style.color = failed === 0 ? 'var(--ok)' : 'var(--er)';
+  status.textContent = '✅ Done! ' + done + ' records submitted' + (failed > 0 ? ', ' + failed + ' failed.' : '.');
+  if (done > 0) toast('✅ April-2026 data seeded — ' + done + ' records.', 'ok');
 }
 
 // ── INIT ──────────────────────────────────────────────
