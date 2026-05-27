@@ -557,6 +557,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
                 <option value="ADMIN">Admin / Other</option>
               </select>
             </div>
+            <div class="fg">
+              <label>Rate ₹/unit <span style="font-size:10px;color:var(--mu)">(default: global rate)</span></label>
+              <input type="number" id="new-office-rate" placeholder="e.g. 8" min="1" max="50" step="0.5" />
+            </div>
           </div>
           <button class="btn bs bsm" onclick="addOffice()">➕ Add Office</button>
         </div>
@@ -571,15 +575,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
         <div class="ctitle adm"><div class="ibadge adm">⚙</div>Global Configuration</div>
 
         <div class="admin-section">
-          <div class="asec-title">💡 Rate Per Unit (₹) — Global Default</div>
+          <div class="asec-title">💡 Default Rate Per Unit (₹) — Fallback for offices without custom rate</div>
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
             <div class="rate-badge">₹ <span id="cur-global-rate">8</span> / unit</div>
             <div style="display:flex;gap:8px;align-items:center">
-              <input type="number" id="new-global-rate" placeholder="New rate" min="1" max="50" step="0.5" style="height:34px;width:100px;border:1.5px solid var(--bo);border-radius:7px;padding:0 10px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none" />
+              <input type="number" id="new-global-rate" placeholder="New default rate" min="1" max="50" step="0.5" style="height:34px;width:100px;border:1.5px solid var(--bo);border-radius:7px;padding:0 10px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none" />
               <button class="btn bs bsm" onclick="saveGlobalRate()">Save Rate</button>
             </div>
           </div>
-          <div style="font-size:11px;color:var(--mu);margin-top:8px">This rate applies to all offices unless office has a custom rate. Office users cannot change the rate.</div>
+          <div style="font-size:11px;color:var(--mu);margin-top:8px">⚠ Yeh rate sirf un offices ke liye hai jinka custom rate set nahi hai. Har office ka alag rate "Offices" tab se set karein.</div>
         </div>
 
         <div class="admin-section">
@@ -601,9 +605,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
 
         <div class="admin-section">
           <div class="asec-title">📊 Google Sheets Integration</div>
-          <div style="font-size:12px;color:var(--tx);margin-bottom:8px">Data automatically syncs to Google Sheet on every submission.</div>
-          <a href="https://script.google.com/macros/s/AKfycbzJZy0opxiRyyQVGlUgc__0m53wBO4XY8DsclWQ8GLz104ziQUqLSplNpajtG14mzg5eA/exec" target="_blank" style="font-size:11px;color:var(--md);word-break:break-all">🔗 API Endpoint (Active)</a>
-          <div style="margin-top:10px">
+          <div style="font-size:12px;color:var(--tx);margin-bottom:8px">Data automatically syncs to Google Sheet on every submission. Admin yahan se Sheet ka data fetch karke apne browser mein load kar sakta hai.</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+            <button class="btn ba bsm" onclick="fetchFromSheet()" id="fetch-btn">📥 Fetch All Records from Sheet</button>
+            <a href="https://script.google.com/macros/s/AKfycbzJZy0opxiRyyQVGlUgc__0m53wBO4XY8DsclWQ8GLz104ziQUqLSplNpajtG14mzg5eA/exec" target="_blank" style="font-size:11px;color:var(--md);word-break:break-all;display:inline-flex;align-items:center">🔗 API Endpoint</a>
+          </div>
+          <div id="fetch-status" style="font-size:12px;color:var(--mu);margin-bottom:8px"></div>
+          <div>
             <a href="https://drive.google.com" target="_blank" class="btn bs bsm" style="text-decoration:none;display:inline-flex">📊 Open Google Drive</a>
           </div>
         </div>
@@ -651,33 +659,43 @@ function initCfg() {
       officePass: 'SAI123',
       globalRate: 8,
       offices: [
-        { name:'AGRA GUEST HOUSE_MRI', type:'MRI', landlords:['PAID BY TAMREZ ALAM'] },
-        { name:'AGRA OFFICE_MRI', type:'MRI', landlords:['PAID BY TAMREZ ALAM'] },
-        { name:'Auriyya (Kanpur)_MRI', type:'MRI', landlords:['RAJEEV SHUKLA'] },
-        { name:'CHIBRAMAU_MRI', type:'MRI', landlords:['SONI'] },
-        { name:'Chitrakoot_MRI', type:'MRI', landlords:['SUDHA KUSHWAHA'] },
-        { name:'ETAH_MRI', type:'MRI', landlords:[] },
-        { name:'ETWAH_MRI', type:'MRI', landlords:['MANJU LATA DRIWEDI'] },
-        { name:'FARUKKABAD_MRI', type:'MRI', landlords:['VITOLI DEVI'] },
-        { name:'FIROZABAD_MRI', type:'MRI', landlords:['RAKESH SINGH RAJAWAT'] },
-        { name:'HAMIRPUR_MRI', type:'MRI', landlords:['DINESH KUSHWAHA'] },
-        { name:'HATHRAS_MRI', type:'MRI', landlords:['BEENA'] },
-        { name:'JHANSI_MRI', type:'MRI', landlords:['Surendra Singh wadhwa'] },
-        { name:'KANNUJ_MRI', type:'MRI', landlords:['RAVINDRA KUMAR SHUKLA'] },
-        { name:'KANPUR_MRI', type:'MRI', landlords:['MAHESHWARI TOMAR'] },
-        { name:'MAHOBA_MRI', type:'MRI', landlords:['KAMLESH'] },
-        { name:'MAINPURI_MRI', type:'MRI', landlords:[] },
-        { name:'MATHURA_MRI', type:'MRI', landlords:['Rajani'] },
-        { name:'ORAI (Jhansi)_MRI', type:'MRI', landlords:['Ashish Gupta'] },
-        { name:'RANIYA (KANPUR DEHAT)_MRI', type:'MRI', landlords:['TILAK RAJ GUPTA'] },
-        { name:'ALIGARH_BILLING', type:'BILLING', landlords:['SUNITA DEVI'] },
-        { name:'ETAH_BILLING', type:'BILLING', landlords:['Prabhakar gupta'] },
-        { name:'KASHGANJ_BILLING', type:'BILLING', landlords:['Shishupal Singh'] },
-        { name:'HATHRAS_BILLING', type:'BILLING', landlords:[] },
-        { name:'HEAD OFFICE - AGRA', type:'ADMIN', landlords:[] },
+        { name:'AGRA GUEST HOUSE_MRI', type:'MRI', rate:8, landlords:['PAID BY TAMREZ ALAM'] },
+        { name:'AGRA OFFICE_MRI', type:'MRI', rate:8, landlords:['PAID BY TAMREZ ALAM'] },
+        { name:'Auriyya (Kanpur)_MRI', type:'MRI', rate:8, landlords:['RAJEEV SHUKLA'] },
+        { name:'CHIBRAMAU_MRI', type:'MRI', rate:8, landlords:['SONI'] },
+        { name:'Chitrakoot_MRI', type:'MRI', rate:7, landlords:['SUDHA KUSHWAHA'] },
+        { name:'ETAH_MRI', type:'MRI', rate:10, landlords:[] },
+        { name:'ETWAH_MRI', type:'MRI', rate:7, landlords:['MANJU LATA DRIWEDI'] },
+        { name:'FARUKKABAD_MRI', type:'MRI', rate:8, landlords:['VITOLI DEVI'] },
+        { name:'FIROZABAD_MRI', type:'MRI', rate:6, landlords:['RAKESH SINGH RAJAWAT'] },
+        { name:'HAMIRPUR_MRI', type:'MRI', rate:7, landlords:['DINESH KUSHWAHA'] },
+        { name:'HATHRAS_MRI', type:'MRI', rate:8, landlords:['BEENA'] },
+        { name:'JHANSI_MRI', type:'MRI', rate:8, landlords:['Surendra Singh wadhwa'] },
+        { name:'KANNUJ_MRI', type:'MRI', rate:8, landlords:['RAVINDRA KUMAR SHUKLA'] },
+        { name:'KANPUR_MRI', type:'MRI', rate:9, landlords:['MAHESHWARI TOMAR'] },
+        { name:'MAHOBA_MRI', type:'MRI', rate:8, landlords:['KAMLESH'] },
+        { name:'MAINPURI_MRI', type:'MRI', rate:8, landlords:[] },
+        { name:'MATHURA_MRI', type:'MRI', rate:8, landlords:['Rajani'] },
+        { name:'ORAI (Jhansi)_MRI', type:'MRI', rate:8, landlords:['Ashish Gupta'] },
+        { name:'RANIYA (KANPUR DEHAT)_MRI', type:'MRI', rate:8, landlords:['TILAK RAJ GUPTA'] },
+        { name:'ALIGARH_BILLING', type:'BILLING', rate:8, landlords:['SUNITA DEVI'] },
+        { name:'ETAH_BILLING', type:'BILLING', rate:8, landlords:['Prabhakar gupta'] },
+        { name:'KASHGANJ_BILLING', type:'BILLING', rate:8, landlords:['Shishupal Singh'] },
+        { name:'HATHRAS_BILLING', type:'BILLING', rate:8, landlords:[] },
+        { name:'HEAD OFFICE - AGRA', type:'ADMIN', rate:8, landlords:[] },
       ]
     };
     saveCfg(c);
+  } else {
+    // Migrate: add rate field to offices that don't have it
+    let migrated = false;
+    c.offices.forEach(o => {
+      if (o.rate === undefined || o.rate === null) {
+        o.rate = c.globalRate || 8;
+        migrated = true;
+      }
+    });
+    if (migrated) saveCfg(c);
   }
   return c;
 }
@@ -755,7 +773,9 @@ function doLogin() {
   document.getElementById('hdr-office').textContent = off.length > 22 ? off.slice(0,22)+'…' : off;
   document.getElementById('bn-office').textContent = off;
   document.getElementById('f-cdate').value = new Date().toISOString().split('T')[0];
-  document.getElementById('f-rate').value = CFG.globalRate;
+  const offObj = CFG.offices.find(o => o.name === off);
+  const offRate = (offObj && offObj.rate) ? offObj.rate : CFG.globalRate;
+  document.getElementById('f-rate').value = offRate;
   setAutoMonth();
   populateLandlordSelect();
   prefillPrev();
@@ -881,7 +901,9 @@ function saveReading() {
   const curr = parseFloat(document.getElementById('f-curr').value);
   const prev = parseFloat(document.getElementById('f-prev').value) || null;
   const pdate = document.getElementById('f-pdate').value || null;
-  const rate = parseFloat(document.getElementById('f-rate').value) || CFG.globalRate;
+  const offObjSave = CFG.offices.find(o => o.name === curOffice);
+  const offRateSave = (offObjSave && offObjSave.rate) ? offObjSave.rate : CFG.globalRate;
+  const rate = parseFloat(document.getElementById('f-rate').value) || offRateSave;
   const paidto = document.getElementById('f-paidto').value.trim();
   const remarks = document.getElementById('f-remarks').value.trim();
 
@@ -1202,6 +1224,7 @@ function renderOfficesList() {
     const div=document.createElement('div'); div.className='office-row';
     const typeBadge = `<span class="otype ${o.type.toLowerCase()}">${o.type}</span>`;
     const recs=getRecs(o.name).length;
+    const curRate = o.rate || CFG.globalRate;
     div.innerHTML=`
       <div class="office-row-header">
         <div>
@@ -1209,6 +1232,12 @@ function renderOfficesList() {
           <span class="office-meta" style="margin-left:8px">${recs} record${recs!==1?'s':''}</span>
         </div>
         <button class="btn bd bsm" onclick="removeOffice(${oi})" ${recs>0?'title="Has data — remove with caution"':''}>🗑 Remove Office</button>
+      </div>
+      <div style="margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.4px">⚡ Rate/Unit:</span>
+        <span class="rate-badge" style="font-size:13px;padding:3px 9px" id="disp-rate-${oi}">₹ ${curRate} / unit</span>
+        <input type="number" id="rateinp-${oi}" value="${curRate}" min="1" max="50" step="0.5" style="height:30px;width:80px;border:1.5px solid var(--bo);border-radius:7px;padding:0 8px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none" />
+        <button class="btn bs bsm" onclick="saveOfficeRate(${oi})">💾 Save Rate</button>
       </div>
       <div style="margin-bottom:6px">
         <span style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.4px">Landlords (As Agreement):</span>
@@ -1236,11 +1265,13 @@ function renderLandlords(oi) {
 function addOffice() {
   const name=document.getElementById('new-office-name').value.trim();
   const type=document.getElementById('new-office-type').value;
+  const rate=parseFloat(document.getElementById('new-office-rate').value)||CFG.globalRate;
   if(!name){ toast('Enter office name.','er'); return; }
   if(CFG.offices.find(o=>o.name.toLowerCase()===name.toLowerCase())){ toast('Office already exists.','er'); return; }
-  CFG.offices.push({name, type, landlords:[]});
+  CFG.offices.push({name, type, rate, landlords:[]});
   saveCfg(CFG);
   document.getElementById('new-office-name').value='';
+  document.getElementById('new-office-rate').value='';
   renderOfficesList(); populateOfficeSelect(); updateAdminBanner();
   toast('✅ Office added: '+name,'ok');
 }
@@ -1276,6 +1307,16 @@ function removeLandlord(oi, li) {
   saveCfg(CFG);
   renderLandlords(oi);
   toast('Landlord removed.','er');
+}
+
+function saveOfficeRate(oi) {
+  const val = parseFloat(document.getElementById('rateinp-'+oi).value);
+  if(!val||val<1||val>50){ toast('Valid rate 1–50 daalen.','er'); return; }
+  CFG.offices[oi].rate = val;
+  saveCfg(CFG);
+  const dispEl = document.getElementById('disp-rate-'+oi);
+  if(dispEl) dispEl.textContent = '₹ '+val+' / unit';
+  toast('✅ '+CFG.offices[oi].name+' ka rate ₹'+val+'/unit save hua.','ok');
 }
 
 // ============ CONFIG ============
@@ -1502,6 +1543,50 @@ function retrySyncAll() {
   if (!recs.length) { toast('All records already synced ✅', 'ok'); return; }
   recs.forEach((r, i) => setTimeout(() => syncToSheet(r), i * 1500));
   toast(`Retrying sync for ${recs.length} record(s)...`, '');
+}
+
+// ============ FETCH FROM SHEET (Admin) ============
+function fetchFromSheet() {
+  const btn = document.getElementById('fetch-btn');
+  const status = document.getElementById('fetch-status');
+  btn.disabled = true; btn.textContent = '⏳ Fetching...';
+  status.textContent = 'Sheet se data fetch ho raha hai...';
+
+  fetch(SHEET_URL + '?action=getAll', { method: 'GET', mode: 'cors' })
+  .then(res => res.json())
+  .then(data => {
+    if (!data.records || !Array.isArray(data.records)) throw new Error('No records in response');
+    let added = 0, skipped = 0;
+    data.records.forEach(rec => {
+      if (!rec.office || !rec.month) return;
+      const existing = getRecs(rec.office);
+      // Check by month+office combo (avoid duplicate)
+      const dup = existing.find(r => r.month === rec.month);
+      if (dup) { skipped++; return; }
+      // Mark as fetched/synced
+      rec.synced = true;
+      rec.fetchedFromSheet = true;
+      if (!rec.id) rec.id = Date.now() + Math.random();
+      if (!rec.photos) rec.photos = [];
+      existing.push(rec);
+      setRecs(rec.office, existing);
+      added++;
+    });
+    status.style.color = 'var(--ok)';
+    status.textContent = `✅ Done! ${added} records imported, ${skipped} already existed.`;
+    renderAdmSummary(); renderAdmChart(); renderAllData(); updateAdminBanner();
+    toast(`✅ Sheet fetch complete: ${added} new records`, 'ok');
+  })
+  .catch(err => {
+    status.style.color = 'var(--er)';
+    status.textContent = '❌ Fetch failed: ' + err.message + ' — Check Sheet script supports ?action=getAll';
+    toast('❌ Sheet fetch failed.', 'er');
+    console.error('Fetch error:', err);
+  })
+  .finally(() => {
+    btn.disabled = false;
+    btn.textContent = '📥 Fetch All Records from Sheet';
+  });
 }
 
 
