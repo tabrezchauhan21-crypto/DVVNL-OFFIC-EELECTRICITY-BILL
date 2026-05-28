@@ -1277,16 +1277,22 @@ function loadConfigFromSheet() {
     .catch(() => {}); // silent fail — use defaults
 }
 
-function saveConfigToSheet() {
-  // Use GET with encoded payload — GET requests work without CORS preflight
-  const encoded = encodeURIComponent(JSON.stringify(CFG));
-  return fetch(SHEET_URL + '?action=saveConfig&cfg=' + encoded, {
-    method: 'GET',
-    mode: 'cors'
-  })
-  .then(r => r.json())
-  .then(d => { if (d.status !== 'success') throw new Error(d.message); })
-  .catch(err => { console.warn('Config save:', err.message); });
+async function saveConfigToSheet() {
+  // Save each key separately to avoid URL length limits
+  // offices JSON can be large — send as 3 separate GET requests
+  try {
+    const keys = [
+      ['adminPass',  CFG.adminPass],
+      ['officePass', CFG.officePass],
+      ['offices',    JSON.stringify(CFG.offices)]
+    ];
+    for (const [key, val] of keys) {
+      const url = SHEET_URL + '?action=saveConfigKey&key=' + encodeURIComponent(key) + '&val=' + encodeURIComponent(val);
+      await fetch(url, { method: 'GET', mode: 'cors' });
+    }
+  } catch(err) {
+    console.warn('Config save error:', err.message);
+  }
 }
 function loadOfficeFromSheet(){
   showLoading('Loading records from Google Sheet...');
