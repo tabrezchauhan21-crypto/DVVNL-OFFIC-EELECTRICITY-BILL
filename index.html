@@ -1278,14 +1278,15 @@ function loadConfigFromSheet() {
 }
 
 function saveConfigToSheet() {
-  return fetch(SHEET_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action: 'saveConfig', config: CFG })
+  // Use GET with encoded payload — GET requests work without CORS preflight
+  const encoded = encodeURIComponent(JSON.stringify(CFG));
+  return fetch(SHEET_URL + '?action=saveConfig&cfg=' + encoded, {
+    method: 'GET',
+    mode: 'cors'
   })
-  .then(() => ({ status: 'success' }))
-  .catch(err => { toast('Config save failed: ' + err.message, 'er'); });
+  .then(r => r.json())
+  .then(d => { if (d.status !== 'success') throw new Error(d.message); })
+  .catch(err => { console.warn('Config save:', err.message); });
 }
 function loadOfficeFromSheet(){
   showLoading('Loading records from Google Sheet...');
