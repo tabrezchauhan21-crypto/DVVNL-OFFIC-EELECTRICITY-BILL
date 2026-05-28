@@ -1274,21 +1274,25 @@ function loadConfigFromSheet() {
         }
       }
     })
-    .catch(() => {}); // silent fail — use defaults
+    .catch(() => {});
 }
 
 async function saveConfigToSheet() {
-  // Save each key separately to avoid URL length limits
-  // offices JSON can be large — send as 3 separate GET requests
   try {
-    const keys = [
-      ['adminPass',  CFG.adminPass],
-      ['officePass', CFG.officePass],
-      ['offices',    JSON.stringify(CFG.offices)]
-    ];
-    for (const [key, val] of keys) {
-      const url = SHEET_URL + '?action=saveConfigKey&key=' + encodeURIComponent(key) + '&val=' + encodeURIComponent(val);
-      await fetch(url, { method: 'GET', mode: 'cors' });
+    const base = SHEET_URL + '?action=saveConfigKey';
+
+    // Save passwords
+    await fetch(base + '&key=adminPass&val=' + encodeURIComponent(CFG.adminPass), {method:'GET',mode:'cors'});
+    await fetch(base + '&key=officePass&val=' + encodeURIComponent(CFG.officePass), {method:'GET',mode:'cors'});
+
+    // Split offices into chunks of 5 to stay under URL limit
+    const chunkSize = 5;
+    // First clear all existing office chunks
+    await fetch(base + '&key=officeChunkCount&val=' + Math.ceil(CFG.offices.length / chunkSize), {method:'GET',mode:'cors'});
+    for (let i = 0; i < CFG.offices.length; i += chunkSize) {
+      const chunk = CFG.offices.slice(i, i + chunkSize);
+      const chunkIdx = Math.floor(i / chunkSize);
+      await fetch(base + '&key=offices_' + chunkIdx + '&val=' + encodeURIComponent(JSON.stringify(chunk)), {method:'GET',mode:'cors'});
     }
   } catch(err) {
     console.warn('Config save error:', err.message);
